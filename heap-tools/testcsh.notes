@@ -1,0 +1,63 @@
+Attached is my scratchpad for testing the various routines I was going to build into CSH scripting for C64. I wrote them in extra-low-level C. Not just C, but replacing structured programming constructs with GOTO operations. My thought was that it is correct and allowable C and it is closer to ASM so I can transcribe the C into ASM more easily. As you can see this is a very minimal set of routines: I didn't get far before it started getting hard and I stopped thinking about it and looked for other things to focus on. What is included here are:
+
+* routines for heaps so that I can dynamically allocate and free strings for variables
+* routines for creating and finding variables in the heap
+* routines for substituting CSH style variables
+   + bare and parentheses wrapped variable names: $var and $(var)
+   + existence checks: $?var
+   + word counts (array size): $#var
+   + character counts (string length): $%var
+   - a hook to start parsing the array index: $var[index], but I didn't implement this as CSH allows multiple items in the selector such as $var[3-5] and $var[$other-] and I was still thinking about how to do this
+   - no hook yet for post-fix operators like $var:u, $var:au, $var:gau, $var:s/up/UP/ as I was still thinking about how to do this
+
+
+I knew I needed but have not implemented yet:
+* routines for command substitution (very easy)
+* routines for filename substitution (moderately difficult)
+   + to get around the slow speed of disks on C64 I was going to create a structure in memory of the contents of all attached disk devices (#8 - #11) so an externally referenced command could be found or throw an error without searching the disks each time...big savings on time. For example "GLOB in*" expands to all files that begin with "in", which could be a pain if I didn't already know all the files and their locations.
+* routines to handle redirection and sequences
+   + there is no error channel so no distinction between > and >&
+   + I would support < input, > output, >> append
+   + I would support || short circuit OR, && short circuit AND
+   + support of inlining as in set var = << varend ... varend
+   + there is no idea of background so no &, (subshell), bg, fg, and none of the variable substitution types that reference a process ID would be supported
+   + there is no idea of an environment so SET/SETENV and UNSET/UNSETENV would be indistinguishable, there is just one variable pool
+* routines to handle expressions
+   + use two stacks with pointers only to process operands and operators, allows for complex operator precedence relationships and parentheses groupings
+   + handle conversion between string/numeric as needed, this is easy as I've already written these routines in assembly multiple times for other projects, useful for IF(expr) and @var = expr commands
+* file inquiry operators
+   + such as "-e filename" returns true or false
+   + many of these operators will be different because the C64 filesystem support is very different than Unix, probably remove most but also add operators for prg/seq/rel/del, use locked indicator for writeable, -D gives device number 8-11 the file exists on, etc
+* the actual execution routines for each command
+   + some commands would not exist or have to be different, naturally
+   + ALLOC returns free memory of the hash in bytes
+   + no support of bindkeys, job control, directories (actually intended to consider the device number the directory so CD can set the default drive to write new files to and PWD returns the default drive), complete, hashstat, history, limit, log, login, logout, ls-F, all "env" commands
+   + support of some C64 BASIC PRINT control codes via ECHO (or ECHOTC if I decide to implement editor tricks in SETTC and SETTY)
+   + REHASH command reloads the data structure that contains directory information from the drives
+   + SCHED command can only put one command in the future, basically a SLEEP command
+* no support for prompt related variables and aliases since the script is not an interactive shell
+* support for special shell variable ARGV which is empty at script start time but can contain values in Phase 2 (see EXEC, SOURCE, EVAL)
+* the input <> operator (along with the necessary hooks to redirect from a file if the Phase 2 script was used in a pipe)
+* Phase 2
+   + support for pipes |
+   + support for script chaining and execution of non-scripts by means of EXEC/SOURCE and the STATUS special variable (if the executed file is a shell script)
+   + support for subroutines by means of EVAL/EXIT and the STATUS special variable
+   + support for ONINTR and PERIODIC (alias) / TPERIOD (variable) for custom interrupt processing, otherwise this command is not supported
+   + support for debugging special shell variables ECHO, VERBOSE and other nice things like NOBEEP, NOCLOBBER, NOGLOB, NONOMATCH, VISIBLEBELL
+   + missing file manipulation such as RM that are not part of the shell but always present in Unix
+   + missing file operations that allow better
+   + other basic routines that are missing from the language such as being able to access the system clock to set or print the elapsed time
+
+My reasoning for starting with variables and variable substitution was this appears to be the core of the language. Everything depends on it, and the bulk of the work will be in this. I don't care about the interface or shell or how programs are stored until I am able to handle variables in the lines. I did handle command alias substitution in an earlier project so I wasn't worried about that. There are no options for it; it is just straightforward string replacement. I had no intention of dealing with command history substitution. It's just that history requires memory and given the scripts are not interactive shell commands but loaded from a script file, the idea of history has a much diminished value since the programmer can just copy the previous command in his script.
+
+My idea of the operational flow of the program was:
+* given a set of program lines stored in memory as strings (these can be loaded from a disk read routine, I am not concerned with how they get in memory just yet)
+* advance the current line pointer to the next line
+* perform substitutions (command, variable, and filename) on the input string, writing the result into a dedicated buffer (1 page in memory reserved for this purpose)
+* the interpreter grabs the first element $output[1] and does a switch statement to jump to the command processor for that keyword
+* jump to bullet #2 above (commands like GOTO leave the pointer on the line with the label so the advancing moves to the first command after the label, if labels are allowed on the same line as commands then I can easily break the label/command into two lines during input into memory)
+
+As you can see, I gave this a lot of thought back then but ran into implementation problems. I'm not an experienced programmer. I do a lot of scripts and programs to make school and work tasks easier but I've done very few "proper" software projects. I've written RPGs as a kid for fun and some automation control scripts in both CSH and Perl that are between 1,000 and 2,000 lines long (including extensive inline documentation and comments). So a big task has been daunting and I don't really have the focus to stick to one project that long. I have a short attention span for projects and always abandon partway through for the next great idea.
+
+Alex
+

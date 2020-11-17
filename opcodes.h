@@ -7,6 +7,12 @@
 #ifndef _opcodes_h
 #define _opcodes_h
 
+typedef struct {
+        int op: 3;
+        int reg: 2;
+        int mod: 3;
+} optype;
+
 #define	OP_SPECIAL		0
 #define OP_OR 			1
 #define OP_AND			2
