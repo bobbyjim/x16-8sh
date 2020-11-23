@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "list.h"
+#include "cheaplist.h"
 
 typedef struct {
    char* key;
@@ -14,7 +14,7 @@ int freelist = 256;
 ENTRY list[256];
 
 
-int findEntry(char* key)
+int findInList(char* key)
 {
    int i = -1;
    while(++i<256)
@@ -27,13 +27,13 @@ int findEntry(char* key)
    return -1;
 }
 
-char* dynamicGetValue(char* key)
+char* dynamicGetListValue(char* key)
 {
    int i = -1;
-   i = findEntry(key);
+   i = findInList(key);
 
    if (i == -1) 
-      i = putEntry(key, "0");
+      i = putIntoList(key, "0");
 
    if (i > -1)
       return list[i].val;
@@ -41,9 +41,9 @@ char* dynamicGetValue(char* key)
    return "out of variable space";
 }
 
-int deleteEntry(char* key)
+int deleteFromList(char* key)
 {
-   int i = findEntry(key);
+   int i = findInList(key);
    if (i > -1) // found it
    { 
       list[i].key = NULL;
@@ -86,13 +86,13 @@ int findFree()
 }
 
 
-int putEntry(char* key, char* val)
+int putIntoList(char* key, char* val)
 {
    int i;
 
    if (freelist == 0) return 0;
 
-   i = findEntry(key);
+   i = findInList(key);
    if (i == -1) i = findFree();
 
    if (i > -1) // found a spot
@@ -125,7 +125,7 @@ void dumpList()
 int main(void)
 {
    initList();
-   putEntry("hi", "there");
+   putIntoList("hi", "there");
    printf("dynamic test value: %s\n", dynamicGetValue("this is a dynamic test"));
    dumpList();
    return 0;

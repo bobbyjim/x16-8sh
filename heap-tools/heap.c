@@ -14,19 +14,10 @@ unsigned char i;
 unsigned char j;
 unsigned char tick;
 
-/*typedef struct heap_segment{
-    struct heap_segment * next;
-    struct heap_segment * prev;
-    unsigned char is_allocated; // to be removed
-    signed short segment_size;  // Includes this header, negative is allocated
-} heap_segment_t;
-*/
-
 void set_line_in(char *buf)
 {
    strncpy(line_in, buf, 256);
 }
-
 
 void heap_vars_dump(void) 
 {
@@ -128,13 +119,13 @@ add2:
 
 
 // heap_var structure =
-// BB *next
-// BB *prev
-// BB size (negative/B1b7 is allocated)
-// B+ name
-// B 0 (delimiter)
-// B* value
-// B 0 (delimiter
+// 0x00-0x01  BB *next
+// 0x02-0x03  BB *prev
+// 0x04-0x05  BB size (negative/B1b7 is allocated)
+// 0x06+      B+ name 
+//            B 0 (delimiter)
+//            B* value
+//            B 0 (delimiter
 
 int testvars(void) // was main()
 {
