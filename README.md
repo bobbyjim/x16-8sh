@@ -8,23 +8,21 @@ When run, 8sh will print a percentage sign and a space:
 # GOAL 2 ACHIEVED: EXIT command.
 Type 'exit' to exit.
 
-# GOAL 3 ACHIEVED: REG command.
-Registers A-D are mapped to r1-r4 in the X16.
-Type 'reg' to see registers A-D (r1-r4)
+# GOAL 3 ACHIEVED: Source stored in Bank 1.
+The input buffer is copied into Bank 1 before processing.
+This decouples input from tokenization.
 
-# GOAL 4: TIME command.
-Type "time" to get system time called and printed.
+# GOAL 4 ACHIEVED: Token metadata written to Bank 2.
+The tokenization pass completely tokenizes the input stream,
+storing the metadata about each token in Bank 2.  Each token
+metadata is 6 bytes long, and points back to the source text
+in Bank 1 as needed.
 
+# GOAL 5 ACHIEVED: Expression parsing.
+Arithmetic expressions compile and run.  They can be stored
+in a group (parentheses) as well, but only the first full 
+expression is interpreted.
 
-
-# GOAL N: To be able to treat the input stream AS the token stream TOO.
-To do this, I'd need enough room on all tokens to store the token type
-and its length at least.
-
-This means I'd overwrite the first char of each token with its type
-(0-255), and null-terminate the string.
-
-I'd be clever so that TOKEN_VAR is 36 ('$').  I suppose I'd have to 
-allocate ten tokens for numbers (48-57, '0'-'9').
-
+# GOAL 6, in progress: multiple values.
+Adding more value types (currently only knows integers).
 
