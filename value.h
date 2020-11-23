@@ -2,6 +2,23 @@
 #define _value_h
 
 #include <stdint.h>
+#include "common.h"
+
+/*
+typedef enum {
+   VAL_BOOL,
+   VAL_NIL,
+   VAL_NUMBER
+} ValueType;
+
+typedef struct {
+   ValueType type;
+   union {
+      bool boolean;
+      int  number;
+   } as;
+} Value;
+*/
 
 typedef int Value;
 

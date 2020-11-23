@@ -5,6 +5,7 @@
 #include "compiler.h"
 #include "scanner.h"
 #include "chunk.h"
+#include "bank.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
@@ -22,17 +23,28 @@
 #define  PREC_CALL         9
 #define  PREC_PRIMARY      10
 
+
+uint8_t compiler_source_bank;
+uint8_t compiler_token_bank;
+
+Token  tmp1, tmp2;
 Token* parser_current;
 Token* parser_previous;
+
+int    token_current_read_position;
+int    compiler_current_token;
+
 bool parser_hadError;
 bool parser_panicMode;
+
+char compilerTempBuffer[256];
 
 //
 //  Pratt Parser Data
 //
-void    (*prefixRule[MAX_TOKEN_VALUE]) ();
-void    (*infixRule[MAX_TOKEN_VALUE]) ();
-uint8_t precedenceRule[MAX_TOKEN_VALUE];
+void    (*prefixRule[MAX_TABLE_TOKEN_VALUE]) ();
+void    (*infixRule[MAX_TABLE_TOKEN_VALUE]) ();
+uint8_t precedenceRule[MAX_TABLE_TOKEN_VALUE];
 
 Chunk* compilingChunk;
 
@@ -44,64 +56,110 @@ static uint8_t getRuleNum(TokenType type);
 static void parsePrecedence(uint8_t precedence);
 
 
+void copyToTempBuffer(uint8_t startPosition, uint8_t length)
+{
+   while(--length)
+   {
+      compilerTempBuffer[length] = beek(startPosition+length);
+   }
+}
+
+
+char* translateErrorCode(uint8_t errorCode)
+{
+   switch( errorCode )
+   {
+      case TOKEN_ERROR_UNTERMINATED_STRING: return "unterminated string";
+      case TOKEN_ERROR_UNEXPECTED_CHAR    : return "unexpected character";
+      case TOKEN_ERROR_EXPECT_END_PAREN   : return "expect ')' after expression";
+      case TOKEN_ERROR_TOO_MANY_CONSTANTS : return "too many constants in one chunk.";
+
+      default: return "unknown error";
+   }
+}
+
 static Chunk* currentChunk() {
   return compilingChunk;
 }
 
-static void errorAt(Token* token, const char* message) {
+static void errorAt(Token* token, uint8_t errorCode) {
 
+  char* message = translateErrorCode( errorCode );
   if (parser_panicMode) return;
   parser_panicMode = true;
 
-//  fprintf(stderr, "[line %u] error", token->line);
-  fprintf(stderr, "error_at(): [line ??] error");
+  fprintf(stderr, "[line %u] error", token->line);
+//  fprintf(stderr, "error_at(): [line ??] error");
 
   if (token->type == TOKEN_EOF) {
     fprintf(stderr, " at end");
-  } else if (token->type == TOKEN_ERROR) {
+  } else if (token->type >= TOKEN_ERROR_START) {
     // Nothing.
   } else {
-    fprintf(stderr, " at '%.*s'", token->len, token->start);
+//    fprintf(stderr, " at '%.*s'", token->length, getInputFrom(token->start_position));
+
+     //copyToTempBuffer(token->start_position, token->length);
+     //printf(" at '%s'", compilerTempBuffer);
+ 
+     printf(" at pos(%d) len(%d)\n", token->start_position, token->length);
   }
 
   fprintf(stderr, ": %s\n", message);
   parser_hadError = true;
 }
 
-static void error(const char* message) {
-  errorAt(parser_previous, message);
+static void error(uint8_t errorCode) {
+  errorAt(parser_previous, errorCode);
 }
 
-static void errorAtCurrent(const char* message) {
-  errorAt(parser_current, message);
+static void errorAtCurrent(uint8_t errorCode) {
+  errorAt(parser_current, errorCode);
+}
+
+//
+//  Reads the token from token_current_read_position
+//  into *parser_current;
+//
+void readToken()
+{
+   setBank(compiler_token_bank);
+
+   parser_current->type   = bankgetbyte(token_current_read_position);
+   ++token_current_read_position;
+
+   parser_current->length = bankgetbyte(token_current_read_position);
+   ++token_current_read_position;
+
+   parser_current->start_position = bankgetint(token_current_read_position);
+   token_current_read_position += 2;
+
+   parser_current->line = bankgetint(token_current_read_position);
+   token_current_read_position += 2;
+
+   ++compiler_current_token;
 }
 
 static void advance() 
 {
-   printf("\ncompiler:advance()\n");
-   printf(" : \n");
-
-   parser_previous = parser_current;
+   *parser_previous = *parser_current; // copy contents
 
    for (;;) {
-      parser_current = scanToken();
+      //parser_current = scanToken(); 
+      readToken();
 
-      debugToken(parser_current,  "advance() current/2");
-      debugToken(parser_previous, "advance() previous/2");
+      if (parser_current->type < TOKEN_ERROR_START) break;
 
-      if (parser_current->type != TOKEN_ERROR) break;
-
-      errorAtCurrent(parser_current->start);
+      errorAtCurrent( parser_current->type );
    }
 }
 
-static void consume(TokenType type, const char* message) {
+static void consume(TokenType type, uint8_t errorCode) {
   if (parser_current->type == type) {
     advance();
     return;
   }
 
-  errorAtCurrent(message);
+  errorAtCurrent(errorCode);
 }
 
 static void emitByte(uint8_t byte) {
@@ -122,7 +180,7 @@ static void emitReturn() {
 static uint8_t makeConstant(Value value) {
   int constant = addConstant(currentChunk(), value);
   if (constant > UINT8_MAX) {
-    error("too many constants in one chunk.");
+    error(TOKEN_ERROR_TOO_MANY_CONSTANTS); // "too many constants in one chunk.");
     return 0;
   }
 
@@ -130,6 +188,7 @@ static uint8_t makeConstant(Value value) {
 }
 
 static void emitConstant(Value value) {
+  printf("   - emit constant: %d\n", value);
   emitBytes(OP_CONSTANT, makeConstant(value));
 }
 
@@ -152,7 +211,7 @@ static void binary() {
   uint8_t  ruleNum = getRuleNum(operatorType);
   uint8_t  rule_precedence = precedenceRule[ ruleNum ];
 
-  // TODO: fetch precedence using rulenum, etc
+  printf("   - binary(): calling parse-precedence(%d)\n", rule_precedence + 1);
   parsePrecedence(rule_precedence + 1);
 
   // Emit the operator instruction.
@@ -167,14 +226,23 @@ static void binary() {
 }
 
 static void number() {
-  int value = atoi(parser_previous->start);
-  printf("   converted to int: %s\n", parser_previous->start);
+  int value;
+  setBank(compiler_source_bank);
+  bankgets(compilerTempBuffer, parser_previous->length, parser_previous->start_position);
+  value = atoi(compilerTempBuffer);
+/*
+  printf("\n converted (%s) at (%d) with length (%u) to int (%d)\n", 
+     compilerTempBuffer, 
+     parser_previous->start_position,
+     parser_previous->length,
+     value);
+*/
   emitConstant(value);
 }
 
 static void grouping() {
   expression();
-  consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
+  consume(TOKEN_RIGHT_PAREN, TOKEN_ERROR_EXPECT_END_PAREN);
 }
 
 static void unary() {
@@ -191,7 +259,6 @@ static void unary() {
       return; // Unreachable.
   }
 }
-
 
 //
 //  Pratt Parser data.
@@ -240,12 +307,13 @@ void initPrattTable()
    ParseRule(TOKEN_ECHO         ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_RETURN       ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_WHILE        ,NULL,    NULL,  PREC_NONE);
-   ParseRule(TOKEN_ERROR        ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_EOF          ,NULL,    NULL,  PREC_NONE);
 
+/*
    prefixRule[TOKEN_NUMBER] = number; 
        infixRule[TOKEN_NUMBER] = NULL; 
        precedenceRule[TOKEN_NUMBER] = PREC_NONE;
+*/
 }
 
 void debugPrattTable()
@@ -259,25 +327,49 @@ void debugPrattTable()
 
 static void parsePrecedence(uint8_t precedence) 
 {
-   debugPrecedence(precedence, "current precedence");
+   printf("\nparse-precedence: %d (%s)\n", precedence, debugPrecedence(precedence));
    advance();
 
+   printf("   - prev (%s) %d\n", debugToken(parser_previous->type), precedenceRule[parser_previous->type]);
+   printf("   - curr (%s) %d\n", debugToken(parser_current->type), precedenceRule[parser_current->type]);
+   printf("\n");
+
+   //
+   //  The prefix rule MUST exist.  Why?
+   //
+   if ( parser_previous->type >= TOKEN_ERROR_START )  // take care of all the error tokens
+   {                                                  // (which DO NOT have Pratt entries!)
+      return;					      //
+   }					              //
    if ( prefixRule[parser_previous->type] == NULL )
    {
-      error("expression expected.");
+      error(TOKEN_ERROR_EXPRESSION_EXPECTED); // "expression expected.");
       return;
    }
-   printf("calling prefix rule %04x on prev\n", prefixRule[parser_previous->type]);
-   (prefixRule[parser_previous->type])();
 
-   printf("parse_precedence: precedence_rule[current]=%u\n", precedenceRule[precedence]);
-   while(precedence <= precedenceRule[precedence])
+//   printf("   - prefix rule (prev) : %u\n", prefixRule[parser_previous->type]);
+   (prefixRule[parser_previous->type])();
+//   printf("\n");
+
+   //
+   //  If we're at a lower precedence, then advance and call 
+   //  the infix rule on the previous token, if present.
+   //
+/*
+   printf("   - curr precedence %d %s\n", 
+		precedenceRule[parser_current->type], 
+		debugPrecedence(precedenceRule[parser_current->type]));
+*/
+   while(precedence <= precedenceRule[parser_current->type])
    {
-      printf("parse_precedence: calling advance()");
+//      printf("   - infix: calling advance()\n");
       advance();
 
-      printf("parse_precedence: calling infixRule()");
-      (infixRule[parser_previous->type])();
+      if ( infixRule[parser_previous->type] )
+      {
+//         printf("   - infix: calling infix-rule(%d)\n", infixRule[parser_previous->type]);
+         (infixRule[parser_previous->type])();
+      }
    }
 }
 
@@ -292,20 +384,23 @@ static void expression() {
    parsePrecedence(PREC_ASSIGNMENT);
 }
 
-
-
-
-bool compile(const char* source, Chunk* chunk)
-//bool compile(int sourceBank, Chunk* chunk)
+bool compile(uint8_t sourceBank, uint8_t tokenBank, Chunk* chunk)
 {
+   scanAll(sourceBank, tokenBank);     // in scanner.c
+
    initPrattTable();
 
-   initScanner(source); // in scanner.c
-//   initScanner(sourceBank); // in scanner.c
    compilingChunk = chunk;
  
    parser_hadError = false; 
    parser_panicMode = false;
+
+   compiler_source_bank = sourceBank;
+   compiler_token_bank  = tokenBank;
+   token_current_read_position = 0;
+   compiler_current_token = 0;
+   parser_current = &tmp1;
+   parser_previous = &tmp2;
 
    //
    //  advance() "primes the pump" on the scanner.
@@ -314,7 +409,7 @@ bool compile(const char* source, Chunk* chunk)
 
    expression();
 
-   consume(TOKEN_EOF, "expect end of expression.");
+   consume(TOKEN_EOF, TOKEN_ERROR_EXPECT_END_OF_EXPR);
 
    endCompiler();
    return !parser_hadError;

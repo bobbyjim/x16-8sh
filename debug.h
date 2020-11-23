@@ -6,8 +6,10 @@
 #include "chunk.h"
 #include "scanner.h"
 
-void debugToken(Token* tok, char* msg);
-void debugPrecedence(uint8_t p, char* msg);
+void testVM();
+
+char* debugToken(TokenType type);
+char* debugPrecedence(uint8_t p);
 
 void disassembleChunk(Chunk* chunk, const char* name);
 int disassembleInstruction(Chunk* chunk, int offset);

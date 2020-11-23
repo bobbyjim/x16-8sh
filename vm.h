@@ -7,6 +7,9 @@
 #define STACK_MAX 256
 
 
+//
+//  Next to go.  Nuff said.
+//
 typedef struct {
    Chunk* chunk;
    uint8_t* ip;
@@ -21,8 +24,10 @@ typedef struct {
 
 void initVM();
 void freeVM();
+
 InterpretResult interpretChunk(Chunk* chunk);
-InterpretResult interpret(int bank); // const char* source);
+InterpretResult interpret(uint8_t sourcebank, uint8_t tokenbank);
+
 void push(Value value);
 Value pop();
 

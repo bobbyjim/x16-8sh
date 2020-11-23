@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <string.h>
 #include <cbm.h>
 #include <peekpoke.h>
 
@@ -55,14 +56,14 @@ static InterpretResult run() {
     Value* slot;
 
 #ifdef DEBUG_TRACE_EXECUTION
-    printf("                      ");
+    printf("                      [");
     for (slot = vm.stack; slot < vm.stackTop; slot++) {
       if (slot > vm.stack) printf(", ");
       //printf("[");
       printValue(*slot);
       //printf("]");
     }
-    printf("\n");
+    printf("]\n");
 
     disassembleInstruction(vm.chunk,
                            (int)(vm.ip - vm.chunk->code));
@@ -133,15 +134,14 @@ InterpretResult interpretChunk(Chunk* chunk)
   return run();
 }
 
-InterpretResult interpret(int sourceBank) // const char* source)
+InterpretResult interpret(uint8_t sourcebank, uint8_t tokenbank)
 {
    Chunk chunk;
    InterpretResult result;
 
    initChunk(&chunk);
 
-//   if (!compile(source, &chunk))
-   if (!compile(sourceBank, &chunk))
+   if (!compile(sourcebank, tokenbank, &chunk)) // compiler.c
    {
       freeChunk(&chunk);  
       return INTERPRET_COMPILE_ERROR;
@@ -152,7 +152,6 @@ InterpretResult interpret(int sourceBank) // const char* source)
 
    result = run();
    freeChunk(&chunk);
-
    return result;
 }
 

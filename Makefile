@@ -1,4 +1,4 @@
-SOURCES = main.c scanner.c debug.c chunk.c memory.c value.c vm.c compiler.c 
+SOURCES = main.c scanner.c debug.c chunk.c memory.c value.c vm.c compiler.c bank.c
 
 PROGRAM = 8SH
 

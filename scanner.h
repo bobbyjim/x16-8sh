@@ -6,14 +6,27 @@
 #define TokenType uint8_t
 
 typedef struct {
+//   const char* start; // not working. why?
    TokenType type;
-   const char* start; // not working. why?
-   uint8_t len;
-//   uint8_t line; // or uint16_t
+   int       start_position;
+   uint8_t   length;
+   int       line;
 } Token;
 
+//void tokenize(char* buffer);
+void initScanner(uint8_t sourceBank, uint8_t tokenBank);
 
-#define MAX_TOKEN_VALUE        64
+//Token* scanToken();
+TokenType scanToken();
+
+//void scan(Token* intoThisToken);
+char* getInputFrom(uint8_t position);
+
+
+void scanAll(uint8_t frombank, uint8_t tobank);
+
+
+#define MAX_TABLE_TOKEN_VALUE   64
 
 #define TOKEN_LEFT_PAREN        1
 #define TOKEN_RIGHT_PAREN       2
@@ -67,16 +80,20 @@ typedef struct {
 #define TOKEN_DOTDOT            44
 #define TOKEN_ENDBLOCK          45
 
-
-#define TOKEN_X16		50
-
-#define TOKEN_ERROR             62
 #define TOKEN_EOF               63
 
-void tokenize(char* buffer);
+// --------------------------------
 
-void initScanner(const char* source);
-//void initScanner(int sourceBank);
-Token* scanToken();
+#define TOKEN_X16		64
+
+#define TOKEN_ERROR_START			224
+#define TOKEN_ERROR_UNTERMINATED_STRING		224
+#define TOKEN_ERROR_UNEXPECTED_CHAR		225
+#define TOKEN_ERROR_EXPECT_END_PAREN            226
+#define TOKEN_ERROR_EXPECT_END_OF_EXPR          227
+#define TOKEN_ERROR_TOO_MANY_CONSTANTS          228
+#define TOKEN_ERROR_EXPRESSION_EXPECTED         229
+
+#define TOKEN_ERROR_HALT_CATCH_FIRE		255
 
 #endif

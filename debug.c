@@ -4,6 +4,57 @@
 #include "debug.h"
 #include "value.h"
 #include "scanner.h"
+#include "vm.h"
+#include "bank.h"
+
+
+void testVM()
+{
+   int twelve;
+   int five;
+   int constant;
+   Chunk chunk;
+
+   initVM();
+
+   initChunk(&chunk);
+   twelve = addConstant(&chunk, 12);
+   writeChunk(&chunk, OP_CONSTANT, 123);
+   writeChunk(&chunk, twelve, 123);
+
+   // ---
+
+   constant = addConstant(&chunk, 3);
+   writeChunk(&chunk, OP_CONSTANT, 123);
+   writeChunk(&chunk, constant, 123);
+
+   writeChunk(&chunk, OP_ADD, 123);
+
+   // ---
+
+   five = addConstant(&chunk, 5);
+   writeChunk(&chunk, OP_CONSTANT, 123);
+   writeChunk(&chunk, five, 123);
+
+   writeChunk(&chunk, OP_DIVIDE, 123);
+
+   // ---
+
+   constant = addConstant(&chunk, 2);
+   writeChunk(&chunk, OP_CONSTANT, 123);
+   writeChunk(&chunk, constant, 123 );
+
+   writeChunk(&chunk, OP_MODULO, 123);
+
+   writeChunk(&chunk, OP_NEGATE, 123);
+   writeChunk(&chunk, OP_RETURN, 123);
+
+//   disassembleChunk(&chunk, "test chunk");
+   interpretChunk(&chunk);
+   freeVM();
+   freeChunk(&chunk);
+}
+
 
 void disassembleChunk(Chunk* chunk, const char* name) {
   int offset;
@@ -13,7 +64,6 @@ void disassembleChunk(Chunk* chunk, const char* name) {
     offset = disassembleInstruction(chunk, offset);
   }
 }
-
 
 static int simpleInstruction(const char* name, int offset) {
   printf("%s\n", name);
@@ -28,7 +78,6 @@ static int constantInstruction(const char* name, Chunk* chunk,
   printf("'\n");
   return offset + 2;
 }
-
 
 int disassembleInstruction(Chunk* chunk, int offset) {
   uint8_t instruction;
@@ -72,11 +121,11 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 
 
 
-void debugToken(Token* tok, char* msg)
+char* debugToken(TokenType type)
 {
    char *name;
 
-   switch(tok->type)
+   switch(type)
    {
       case TOKEN_MINUS         : name = "minus";      break;
       case TOKEN_PLUS          : name = "plus" ;      break;
@@ -125,21 +174,17 @@ void debugToken(Token* tok, char* msg)
       case TOKEN_WHILE         : name = "while";  break;
 
       case TOKEN_EOF           : name = "eof";  break;
-      case TOKEN_ERROR         : name = "error";  break;
+      case TOKEN_ERROR_UNTERMINATED_STRING  : name = "error: unterminated string";  break;
+      case TOKEN_ERROR_UNEXPECTED_CHAR      : name = "error: unexpected char";  break;
+      case TOKEN_ERROR_HALT_CATCH_FIRE      : name = "error: hcf"; break;
+
       default                  : name = "n/a"; break;
    }
 
-   printf("token %2u %-11s   :%s  ^%u (%u)\n", tok->type, name, msg, tok->start, tok->len);
-/*
-   printf("   - type : %u\n", tok->type);
-   printf("   - name : %s\n", name);
-   printf("   - start: %u\n", tok->start);
-   printf("   - len  : %u\n", tok->len);
-   printf("\n");
-*/
+   return name;
 }
 
-void debugPrecedence(uint8_t p, char* msg)
+char* debugPrecedence(uint8_t p)
 {
    char *name = "n/a";
    switch(p)
@@ -155,8 +200,8 @@ void debugPrecedence(uint8_t p, char* msg)
       case  8   : name = "unary"; break;
       case  9   : name = "call"; break;
       case  10  : name = "primary"; break;
-      default   : name = sprintf("level %u", p); break;
+      default   : name = "something else"; break;
    }
-   printf("%10s :%s\n", name, msg);
+   return name;
 }
 

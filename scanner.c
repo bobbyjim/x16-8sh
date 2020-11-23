@@ -8,57 +8,56 @@
 #include "common.h"
 #include "compiler.h"
 #include "scanner.h"
-//#include "list.h"
 #include "opcodes.h"
+#include "bank.h"
 
 #include "debug.h"
 
-//extern uint8_t program[];
-//extern uint8_t *bytecode;
+uint8_t scanner_bank;              //  Scanner workspace.
+int     scanner_start_position;    // 
+int     scanner_current_position;  // 
+int     scanner_line;              // 
 
-//
-// We don't want to be able to change the input source, 
-// so we should declare these to be const.
-//
-const char* scanner_start;
-const char* scanner_current;
-uint8_t     scanner_line;
+uint8_t token_bank;                //  Token output bank.
+int     token_rw_head_position;    //  Current token input/output position.
+int     token_count;               //  Total # of tokens.
 
-static int isDigit(char c) {
-  return c >= '0' && c <= '9';
-}
+uint8_t token_type;                //  Token workspace.
+int     token_start_position;      //  Offset in Bank.
+uint8_t token_length;              //
+int     token_line;                //  Is >256 realistic?
 
-static int isAlpha(char c) {
-  return (c >= 'a' && c <= 'z') || c == '_';
-}
+char scannerTempBuffer[256];       //  Scratch buffer.
 
 static int isDot(char c) {
    return c == '.';
 }
 
 static int isAtEnd() {
-  return *scanner_current == '\0';
+   return beek(scanner_current_position) == '\0';
+//  return input_source[scanner_current_position] == '\0';
 }
 
 static char advance() {
-  ++scanner_current;
-  return scanner_current[-1];
+  ++scanner_current_position;
+   return beek(scanner_current_position-1);
+//  return input_source[scanner_current_position-1]; // scanner_current[-1];
 }
 
-static char peek() {
-  return *scanner_current;
-}
+//static char peek() {
+//  return input_source[scanner_current_position];
+//}
 
-static char peekNext() {
-  if (isAtEnd()) return '\0';
-  return scanner_current[1];
-}
+//static char peekNext() {
+//  if (isAtEnd()) return '\0';
+//  return input_source[scanner_current_position+1];
+//}
 
 static bool match(char expected) {
   if (isAtEnd()) return false;
-  if (*scanner_current != expected) return false;
+  if (beek(scanner_current_position) != expected) return false;
 
-  ++scanner_current;
+  ++scanner_current_position;
   return true;
 }
 
@@ -66,7 +65,7 @@ static void skipWhitespace()
 {
   char c;
   for (;;) {
-    c = peek();
+    c = beek(scanner_current_position);
     switch (c) {
       case ' ':
       case '\r':
@@ -80,8 +79,8 @@ static void skipWhitespace()
          break;
 
       case '/': // comments
-         if (peekNext() == '/') {
-            while(peek() != '\n' && !isAtEnd()) advance();
+         if (beeknext(scanner_current_position) == '/') {
+            while(beek(scanner_current_position) != '\n' && !isAtEnd()) advance();
          } else {
             return;
          }
@@ -98,35 +97,34 @@ static void skipWhitespace()
  		Token builders
 
 *************************************************************/
-static Token* makeToken(TokenType type) {
-  Token token;
-  token.type = type;
-  token.start = scanner_start;
-  token.len = (uint8_t)((uint16_t)scanner_current - (uint16_t)scanner_start);
-  
-  printf("make_token(): start=%u, len= %u\n", token.start, token.len);
-  debugToken(&token, "make_token()");
+//static Token* makeToken(TokenType type) {
+TokenType makeToken(TokenType type) {
+  //Token token;
+  token_type = type;
+  token_start_position = scanner_start_position;
+  token_length = scanner_current_position - scanner_start_position;
+  token_line = scanner_line;
 
-//  token.line = scanner_line;
-
-  return &token;
+  //return &token;
+  return token_type; 
 }
 
-static Token* errorToken(const char* message) {
-  Token token;
-  token.type = TOKEN_ERROR;
-  token.start = message;
-  token.len = (uint8_t)strlen(message);
-//  token.line = line;
+//static Token* errorToken(uint8_t errorTokenType) {
+TokenType errorToken(TokenType errorTokenType) {
+  //Token token;
+  token_type = errorTokenType;
+  token_start_position = 0;
+  token_length = 0;
+  token_line = scanner_line;
 
-  return &token;
+  //return &token;
+  return token_type;
 }
 
 static TokenType checkKeyword(int start, int length,
     const char* rest, TokenType type) {
-  if (scanner_current - scanner_start == start + length &&
-      memcmp(scanner_start + start, rest, length) == 0) {
-
+  if (scanner_current_position - scanner_start_position == start + length &&
+      memcmpBank(scanner_start_position+start,rest,length) == 0) {
     return type;
   }
 
@@ -135,7 +133,7 @@ static TokenType checkKeyword(int start, int length,
 
 static TokenType identifierType()
 { 
-   switch (scanner_start[0]) {
+   switch (beek(scanner_start_position)) {
 //    case 'a': 
 //    case 'b': 
 //    case 'c': 
@@ -166,48 +164,52 @@ static TokenType identifierType()
   return TOKEN_IDENTIFIER;
 }
 
-static Token* identifier() {
-  while (isAlpha(peek()) || isDigit(peek()) || isDot(peek())) advance();
+//static Token* identifier() {
+TokenType identifier() {
+  while (isalnum(beek(scanner_current_position)) || isDot(beek(scanner_current_position))) advance();
 
   return makeToken(identifierType());
 }
 
-static Token* variable() {
-  while (isAlpha(peek()) || isDigit(peek())) advance();
+//static Token* variable() {
+TokenType variable() {
+  while (isalnum(beek(scanner_current_position))) advance();
 
   // Look for a dot inside.
-  if (peek() == '.' && (isAlpha(peekNext()) || isDigit(peekNext()))) {
+  if ( beek(scanner_current_position) == '.' && isalnum(beeknext(scanner_current_position)) ) {
      // Consume the .
      advance();
 
-     while (isAlpha(peek()) || isDigit(peek())) advance();
+     while (isalnum(beek(scanner_current_position))) advance();
   }
   
-  return makeToken(TOKEN_IDENTIFIER); // VARIABLE); 
+  return makeToken(TOKEN_IDENTIFIER);
 }
 
 
-static Token* number() {
-  while (isDigit(peek())) advance();
+//static Token* number() {
+TokenType number() {
+  while (isdigit(beek(scanner_current_position))) advance();
 
   // Look for a fractional part.
-  if (peek() == '.' && isDigit(peekNext())) {
+  if (beek(scanner_current_position) == '.' && isdigit(beeknext(scanner_current_position))) {
     // Consume the ".".
     advance();
 
-    while (isDigit(peek())) advance();
+    while (isdigit(beek(scanner_current_position))) advance();
   }
 
   return makeToken(TOKEN_NUMBER);
 }
 
-static Token* string() {
-  while (peek() != '"' && !isAtEnd()) {
-    if (peek() == '\n') ++scanner_line;
+//static Token* string() {
+TokenType string() {
+  while (beek(scanner_current_position) != '"' && !isAtEnd()) {
+    if (beek(scanner_current_position) == '\n') ++scanner_line;
     advance();
   }
 
-  if (isAtEnd()) return errorToken("unterminated string.");
+  if (isAtEnd()) /*return*/ errorToken(TOKEN_ERROR_UNTERMINATED_STRING);
 
   // The closing quote.
   advance();
@@ -221,26 +223,38 @@ static Token* string() {
  		Scanner API
 
 *************************************************************/
-//void initScanner(int sourceBank)
-void initScanner(const char* source)
+void initScanner(uint8_t sourceBank, uint8_t tokenBank)
 {
-   scanner_start = source;
-   scanner_current = source;
-   scanner_line = 1;
+   scanner_bank             = sourceBank;
+   scanner_start_position   = 0; 
+   scanner_current_position = 0;
+   scanner_line             = 1;
+
+   token_bank               = tokenBank;
+   token_rw_head_position   = 0;
+   token_count              = 0;
+   token_type               = 0;
+   token_start_position     = 0;
+   token_length             = 0;
+   token_line               = 0;
 }
 
-Token* scanToken()
+//Token* scanToken()
+TokenType scanToken()
 {
    char c;
 
+   setBank(scanner_bank); // just in case
+
    skipWhitespace();
-   scanner_start = scanner_current; // after we've eaten the whitespace
+   scanner_start_position = scanner_current_position; 
 
    if (isAtEnd()) return makeToken(TOKEN_EOF);
+
    c = advance();
 
-   if (isAlpha(c)) return identifier();
-   if (isDigit(c)) return number();
+   if (isalpha(c)) return identifier();
+   if (isdigit(c)) return number();
 
    switch(c) 
    {
@@ -278,9 +292,91 @@ Token* scanToken()
       case '\'': return string();
 
       // variables
-      case '$': if (isAlpha(peek())) return variable();
+      case '$': if (isalpha(beeknext(scanner_current_position))) return variable();
    }
 
-   return errorToken("unexpected character.");
+   return errorToken(TOKEN_ERROR_UNEXPECTED_CHAR);
+}
+
+
+void copyToScannerTempBuffer(uint8_t startPosition, uint8_t length)
+{
+   while(--length)
+   {
+      scannerTempBuffer[length] = beek(startPosition+length);
+   }
+}
+
+/*
+uint8_t token_bank;                //  Token output bank.
+int     token_rw_head_position;    //  Token r/w position.
+
+uint8_t token_type;                //  Token workspace.
+uint8_t token_length;              //
+int     token_start_position;      //  0-8192
+int     token_line;                //  Is >256 realistic?
+*/
+void writeToken()
+{
+   setBank(token_bank); // just in case
+
+   bankputbyte(token_type,token_rw_head_position);
+   ++token_rw_head_position;   
+
+   bankputbyte(token_length,token_rw_head_position);
+   ++token_rw_head_position;
+
+   bankputint(token_start_position,token_rw_head_position);
+   token_rw_head_position += 2;
+
+   bankputint(token_line,token_rw_head_position);
+   token_rw_head_position += 2;
+
+   ++token_count;
+}
+
+
+void scanAll(uint8_t frombank, uint8_t tobank)
+{
+   int line = -1;
+   initScanner(frombank, tobank);
+   puts("*** scan all ***");
+
+   for (;;) {
+//      Token* token = scanToken();
+      TokenType type = scanToken();
+
+      if (token_line != line) {
+         printf("%4d ", token_line);
+         line = token_line;
+      }
+      else
+      {
+         printf("   | ");
+      }
+
+      bankgets(scannerTempBuffer, token_length, token_start_position);
+
+      printf("%-20s %15s %2d (>%d)\n", scannerTempBuffer, debugToken(token_type), token_type, token_rw_head_position);
+/*
+      printf("token type       : %d (%s)\n", token_type, debugToken(token_type));
+      printf("token start      : %d\n", token_start_position);      //
+      printf("token length     : %d\n", token_length);              //
+      printf("token line       : %d\n", token_line);                //
+      printf("token bank       : %d\n", token_bank);                //  Token workspace.
+      printf("token write pos  : %d\n", token_rw_head_position);    //  Position of the token writer.
+*/
+
+/*
+      printf("scanner start    : %d\n", scanner_start_position);    // 
+      printf("scanner current  : %d\n", scanner_current_position);  // 
+      printf("scanner line     : %d\n", scanner_line);              // 
+      printf("scanner bank     : %d\n", scanner_bank);              //  Scanner workspace.
+*/
+
+      writeToken();
+
+      if (token_type == TOKEN_EOF) break;
+   }
 }
 
