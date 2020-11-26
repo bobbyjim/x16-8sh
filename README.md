@@ -5,7 +5,7 @@
 A shell is a command line interpreter. It provides:
 * common system commands and utilities, for example for files.  Pipes are useful system utilities.
 * environment variables, which represent system status and user-defined state.
-* a scritping language, for example to allow conditional command execution and state checking.
+* a scripting language, for example to allow conditional command execution and state checking.
 
 # The current binary:
 * uses a repl.  the entered line is copied into Bank 1.
