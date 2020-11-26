@@ -1,6 +1,23 @@
 # x16-8sh
 8Shell for the X16
 
+The current binary:
+* uses a repl.  the entered line is copied into Bank 1.
+* specifically looks for "exit" to quit, otherwise:
+* tokenizes the contents of Bank 1, storing type and pointers into Bank 2.
+* compiles single expressions to bytecodes.
+* executes bytecodes on its VM.
+* is not especially optimized.
+
+It has a Makefile and uses cc65.
+
+It currently needs:
+* a hashtable for environment variables.
+* a heap manager (Alex Johnson has provided one).
+* binop, assignment, interpolation, and function calls.
+
+The code is based on Bob Nystrom's CRAFTING INTERPRETERS document.
+
 # GOAL 1 ACHIEVED: REPL with prompt.
 When run, 8sh will print a percentage sign and a space:
 % 
