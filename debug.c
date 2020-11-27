@@ -10,14 +10,15 @@
 
 void testVM()
 {
-   int twelve;
-   int five;
-   int constant;
+//   int twelve;
+//   int five;
+//   int constant;
    Chunk chunk;
 
    initVM();
 
    initChunk(&chunk);
+/*
    twelve = addConstant(&chunk, 12);
    writeChunk(&chunk, OP_CONSTANT, 123);
    writeChunk(&chunk, twelve, 123);
@@ -47,6 +48,7 @@ void testVM()
    writeChunk(&chunk, OP_MODULO, 123);
 
    writeChunk(&chunk, OP_NEGATE, 123);
+*/
    writeChunk(&chunk, OP_RETURN, 123);
 
 //   disassembleChunk(&chunk, "test chunk");
@@ -71,10 +73,13 @@ static int simpleInstruction(const char* name, int offset) {
 }
 
 static int constantInstruction(const char* name, Chunk* chunk,
-                               int offset) {
+                               int offset) 
+{
+  Value val;
   uint8_t constant = chunk->code[offset + 1];
+  val = chunk->constants.values[constant];
   printf("%-16s %4d '", name, constant);
-  printValue(chunk->constants.values[constant]);
+  printValue(&val);
   printf("'\n");
   return offset + 2;
 }
@@ -92,27 +97,23 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 
   instruction = chunk->code[offset];
   switch (instruction) {
-    case OP_CONSTANT:
-      return constantInstruction("op_constant", chunk, offset);
+    case OP_NIL:  	return simpleInstruction("op_nil", offset);
+    case OP_TRUE: 	return simpleInstruction("op_true", offset);
+    case OP_FALSE: 	return simpleInstruction("op_false", offset);
+    case OP_EQUAL: 	return simpleInstruction("op_equal", offset);
+    case OP_GREATER: 	return simpleInstruction("op_greater", offset);
+    case OP_LESS: 	return simpleInstruction("op_less", offset);
 
-    case OP_DUMP:
-      return simpleInstruction("op_dump", offset);
+    case OP_CONSTANT: 	return constantInstruction("op_constant", chunk, offset);
+    case OP_ADD: 	return simpleInstruction("op_add", offset);
+    case OP_SUBTRACT: 	return simpleInstruction("op_subtract", offset);
+    case OP_MULTIPLY: 	return simpleInstruction("op_multiply", offset);
+    case OP_DIVIDE: 	return simpleInstruction("op_divide", offset);
+    case OP_MODULO: 	return simpleInstruction("op_modulo", offset);
 
-    case OP_ADD:
-      return simpleInstruction("op_add", offset);
-    case OP_SUBTRACT:
-      return simpleInstruction("op_subtract", offset);
-    case OP_MULTIPLY:
-      return simpleInstruction("op_multiply", offset);
-    case OP_DIVIDE:
-      return simpleInstruction("op_divide", offset);
-    case OP_MODULO:
-      return simpleInstruction("op_modulo", offset);
-
-    case OP_NEGATE:
-      return simpleInstruction("op_negate", offset);
-    case OP_RETURN:
-      return simpleInstruction("op_return", offset);
+    case OP_NOT:        return simpleInstruction("op_not", offset);
+    case OP_NEGATE: 	return simpleInstruction("op_negate", offset);
+    case OP_RETURN: 	return simpleInstruction("op_return", offset);
     default:
       printf("Unknown opcode %d\n", instruction);
       return offset + 1;
@@ -127,6 +128,10 @@ char* debugToken(TokenType type)
 
    switch(type)
    {
+      case TOKEN_NIL	       : name = "nil";		break;
+      case TOKEN_TRUE	       : name = "true";         break;
+      case TOKEN_FALSE	       : name = "false"; 	break;
+
       case TOKEN_MINUS         : name = "minus";      break;
       case TOKEN_PLUS          : name = "plus" ;      break;
 //    case TOKEN_POW           : name = "pow"  ;      break;
@@ -168,7 +173,6 @@ char* debugToken(TokenType type)
       case TOKEN_ECHO          : name = "echo";  break;
       case TOKEN_FOR           : name = "for";  break;
       case TOKEN_IF            : name = "if";  break;
-      case TOKEN_NIL           : name = "nil";  break;
       case TOKEN_RETURN        : name = "return";  break;
       case TOKEN_SUB           : name = "sub";  break;
       case TOKEN_WHILE         : name = "while";  break;

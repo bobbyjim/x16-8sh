@@ -80,6 +80,9 @@ void scanAll(uint8_t frombank, uint8_t tobank);
 #define TOKEN_DOTDOT            44
 #define TOKEN_ENDBLOCK          45
 
+#define TOKEN_TRUE		46
+#define TOKEN_FALSE		47
+
 #define TOKEN_EOF               63
 
 // --------------------------------

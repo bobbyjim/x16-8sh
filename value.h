@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include "common.h"
 
-/*
 typedef enum {
    VAL_BOOL,
    VAL_NIL,
@@ -18,9 +17,20 @@ typedef struct {
       int  number;
    } as;
 } Value;
-*/
 
-typedef int Value;
+#define IS_BOOL(value)		((value).type == VAL_BOOL)
+#define IS_NIL(value)		((value).type == VAL_NIL)
+#define IS_NUMBER(value)	((value).type == VAL_NUMBER)
+
+#define AS_BOOL(value)		((value).as.boolean)
+#define AS_NUMBER(value)	((value).as.number)
+
+void setBool(Value* val);
+void setNil(Value* val);
+void setNumber(Value* val);
+
+
+//typedef int Value;
 
 typedef struct {
    uint8_t capacity;
@@ -29,10 +39,11 @@ typedef struct {
 } ValueArray;
 
 
+bool valuesEqual(Value* a, Value* b);
 void initValueArray(ValueArray* array);
-void writeValueArray(ValueArray* array, Value value);
+void writeValueArray(ValueArray* array, Value* value);
 void freeValueArray(ValueArray* array);
-void printValue(Value value);
+void printValue(Value* value);
 
 
 #endif

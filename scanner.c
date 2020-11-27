@@ -70,6 +70,7 @@ static void skipWhitespace()
       case ' ':
       case '\r':
       case '\t':
+      case 160 :  // this is some strange PETSCII space
         advance();
         break;
 
@@ -78,7 +79,11 @@ static void skipWhitespace()
          advance();
          break;
 
-      case '/': // comments
+      case '#': // "#" comment
+         while(beek(scanner_current_position) != '\n' && !isAtEnd()) advance();
+         break;
+
+      case '/': // "//" comment
          if (beeknext(scanner_current_position) == '/') {
             while(beek(scanner_current_position) != '\n' && !isAtEnd()) advance();
          } else {
@@ -137,23 +142,27 @@ static TokenType identifierType()
 //    case 'a': 
 //    case 'b': 
 //    case 'c': 
-//    case 'd': 
-      case 'e': return checkKeyword(1, 3, "cho", TOKEN_ELSE);
-      case 'f': return checkKeyword(1, 2, "or",  TOKEN_FOR);
+      case 'd': return checkKeyword(1, 3, "one",   TOKEN_ENDBLOCK); // done
+      case 'e': return checkKeyword(1, 3, "lse",   TOKEN_ELSE);
+      case 'f': 
+	if (checkKeyword(1, 2, "or",    TOKEN_FOR) == TOKEN_FOR)
+	   return TOKEN_FOR;
+        return checkKeyword(1, 4, "alse",  TOKEN_FALSE);
+	
 //    case 'g':
 //    case 'h': 
-      case 'i': return checkKeyword(1, 1, "f", TOKEN_IF);
+      case 'i': return checkKeyword(1, 1, "f",     TOKEN_IF);
 //    case 'j':
 //    case 'k':
 //    case 'l':
 //    case 'm':
-      case 'n': return checkKeyword(1, 3, "ull", TOKEN_NIL);
+      case 'n': return checkKeyword(1, 2, "il",    TOKEN_NIL);
 //    case 'o': 
-      case 'p': return checkKeyword(1, 1, "r", TOKEN_ECHO); // pr = print = echo
+      case 'p': return checkKeyword(1, 1, "r",     TOKEN_ECHO); // pr = print = echo
 //    case 'q':
       case 'r': return checkKeyword(1, 5, "eturn", TOKEN_RETURN);
-      case 's': return checkKeyword(1, 2, "ub", TOKEN_SUB);
-//    case 't': 
+      case 's': return checkKeyword(1, 2, "ub",    TOKEN_SUB);
+      case 't': return checkKeyword(1, 3, "rue",   TOKEN_TRUE);
 //    case 'u':
 //    case 'v': 
       case 'w': return checkKeyword(1, 4, "hile", TOKEN_WHILE);
@@ -340,7 +349,7 @@ void scanAll(uint8_t frombank, uint8_t tobank)
 {
    int line = -1;
    initScanner(frombank, tobank);
-   puts("*** scan all ***");
+   puts("*** scan all ***\n");
 
    for (;;) {
 //      Token* token = scanToken();

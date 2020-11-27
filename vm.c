@@ -11,25 +11,69 @@
 
 VM vm;
 
+Value NIL_OBJ;
+Value TRUE_OBJ;
+Value FALSE_OBJ;
+
+
 static void resetStack() {
   vm.stackTop = vm.stack;
 }
 
+static void runtimeError(const char* format, ...)
+{
+  va_list args;
+  size_t instruction;
+  int line;
+
+  va_start(args, format);
+  vprintf(format, args);
+  va_end(args);
+  puts("\n");
+
+  instruction = vm.ip - vm.chunk->code - 1;
+  line = vm.chunk->lines[instruction];
+  printf("[line %d] in script\n", line);
+
+  resetStack();
+}
+
+
 void initVM() {
    resetStack();
+
+   // set some constants
+   setNil(&NIL_OBJ);
+   TRUE_OBJ.as.boolean = true;
+   setBool(&TRUE_OBJ);
+   setBool(&FALSE_OBJ);
 }
 
 void freeVM() {
 }
 
-void push(Value value) {
-  *vm.stackTop = value;
+void push(Value* value) {
+  *vm.stackTop = *value;
   vm.stackTop++;
 }
 
-Value pop() {
+Value* pop() {
   vm.stackTop--;
-  return *vm.stackTop;
+  return vm.stackTop; // was *vm.stackTop
+}
+
+Value* top() {
+  return vm.stackTop; // without popping
+}
+
+Value* peek(int distance)
+{
+   return &vm.stackTop[-1 - distance];
+}
+
+static bool isFalsey(Value* value)
+{
+   return IS_NIL(*value) || (IS_BOOL(*value) && !AS_BOOL(*value));
 }
 
 ////////////////////////////////////////////////////////////
@@ -41,13 +85,23 @@ Value pop() {
 ////////////////////////////////////////////////////////////
 static InterpretResult run() {
 #define READ_BYTE() (*vm.ip++)
-#define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+#define READ_CONSTANT() (&(vm.chunk->constants.values[READ_BYTE()]))
+
+#define LOGICAL_OP(op) \
+    do { \
+      Value* b = pop(); \
+      Value* a = pop(); \
+      a->as.boolean = a->as.number op b->as.number; \
+      a->type = VAL_BOOL; \
+      push(a); \
+    } while (false)
 
 #define BINARY_OP(op) \
     do { \
-      int b = pop(); \
-      int a = pop(); \
-      push(a op b); \
+      Value* b = pop(); \
+      Value* a = pop(); \
+      a->as.number = a->as.number op b->as.number; \
+      push(a); \
     } while (false)
 
 
@@ -60,7 +114,7 @@ static InterpretResult run() {
     for (slot = vm.stack; slot < vm.stackTop; slot++) {
       if (slot > vm.stack) printf(", ");
       //printf("[");
-      printValue(*slot);
+      printValue(slot);
       //printf("]");
     }
     printf("]\n");
@@ -73,42 +127,60 @@ static InterpretResult run() {
 
       case OP_CONSTANT: 
       {
-        Value constant = READ_CONSTANT();
+        Value* constant = READ_CONSTANT();
         push(constant);
         break;
       }
 
-      // 
-      // A cheapo way to dump memory at $a000
-      // 
-      case OP_DUMP: 
+      case OP_NIL:      push(&NIL_OBJ); break;
+      case OP_TRUE: 	push(&TRUE_OBJ); break;
+      case OP_FALSE:	push(&FALSE_OBJ); break;
+
+      case OP_EQUAL:    
       {
-         int i = -1;
-         int block = pop();
-         while(++i < 256)
-         {
-            unsigned char c = PEEK(0xa000 + block*0x100 + i);
-            printf("%02x ", c);
-            if (i%16==15) puts(" ");
-         }
-         puts(" ");
+         Value* b = pop();
+         Value* a = pop();
+	 a->as.boolean = valuesEqual(a,b);
+         a->type = VAL_BOOL;
+         push(a);
          break;
       }
+
+      case OP_GREATER:  LOGICAL_OP(>); break;
+      case OP_LESS:     LOGICAL_OP(<); break;
 
       case OP_ADD:      BINARY_OP(+); break;
       case OP_SUBTRACT: BINARY_OP(-); break;
       case OP_MULTIPLY: BINARY_OP(*); break;
       case OP_DIVIDE:   BINARY_OP(/); break;
 
-      // TODO probably faster to directly negate the stack top!
-      case OP_NEGATE:   push(-pop()); break;
+      case OP_NOT:
+      {
+         Value* v = pop();
+         printf("value = %d,%d\n", v->type, v->as.boolean);
+         v->as.boolean = isFalsey(v);
+         v->type = VAL_BOOL;
+         printf("value = %d,%d\n", v->type, v->as.boolean);
+         push(v);
+         break;
+      }
+
+      case OP_NEGATE:   
+      {
+         Value* v = pop();
+         v->as.number = -v->as.number;
+         push(v);
+	 break;
+      }
 
       case OP_MODULO: 
       {
-         int b = pop();
-         int a = pop();
-         while(a>b) a -= b;
-         push(a);
+         Value* b = pop();
+         Value* a = top();
+         int bb = b->as.number;
+         int aa = a->as.number;
+         while(aa > bb) aa -= bb;
+         a->as.number = aa;
          break;
       }
 
@@ -125,6 +197,7 @@ static InterpretResult run() {
 #undef READ_BYTE
 #undef READ_CONSTANT
 #undef BINARY_OP(op)
+#undef LOGICAL_OP(op)
 }
 
 InterpretResult interpretChunk(Chunk* chunk) 

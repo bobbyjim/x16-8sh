@@ -1,5 +1,5 @@
 
-#include <stdio.h>
+#include <conio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -66,9 +66,9 @@ void printEntry(int i)
 {
    if (list[i].key != NULL)
    {
-      printf("entry: %d\n", i);
-      printf("key:   %s\n", list[i].key);
-      printf("val:   %s\n", list[i].val);
+      cprintf("entry: %d\n", i);
+      cprintf("key:   %s\n", list[i].key);
+      cprintf("val:   %s\n", list[i].val);
    }
 }
 
@@ -105,7 +105,7 @@ int putIntoList(char* key, char* val)
       return i;
    }
    
-   printf("out of variable space.\n");
+   cprintf("out of variable space.\n");
 
    return -1; 
 }
@@ -113,7 +113,7 @@ int putIntoList(char* key, char* val)
 void dumpList()
 {
    int i = -1;
-   printf("free slots: %d\n", freelist);
+   cprintf("free slots: %d\n", freelist);
    while(++i<256)
    {
       printEntry(i);
@@ -126,7 +126,7 @@ int main(void)
 {
    initList();
    putIntoList("hi", "there");
-   printf("dynamic test value: %s\n", dynamicGetValue("this is a dynamic test"));
+   cprintf("dynamic test value: %s\n", dynamicGetValue("this is a dynamic test"));
    dumpList();
    return 0;
 }

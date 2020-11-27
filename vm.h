@@ -28,7 +28,7 @@ void freeVM();
 InterpretResult interpretChunk(Chunk* chunk);
 InterpretResult interpret(uint8_t sourcebank, uint8_t tokenbank);
 
-void push(Value value);
-Value pop();
+void push(Value* value);
+Value* pop();
 
 #endif

@@ -6,8 +6,9 @@
 #include "value.h"
 
 typedef enum {
-  OP_NULL,
-  OP_DUMP,
+  OP_NIL,
+  OP_FALSE,
+  OP_TRUE,
 
   OP_RETURN,
   OP_CONSTANT,
@@ -17,7 +18,10 @@ typedef enum {
   OP_DIVIDE,
   OP_MODULO,
   OP_NEGATE,
-
+  OP_NOT,
+  OP_EQUAL,
+  OP_GREATER,
+  OP_LESS,
 
   OP_GET,
   OP_PUT,
@@ -36,7 +40,6 @@ typedef enum {
   OP_WHILE,
 
   OP_REL,
-  OP_EQ,
   OP_OROR,
   OP_ANDAND,
   OP_POW,
@@ -55,7 +58,7 @@ typedef struct {
 void initChunk(Chunk* chunk);
 void freeChunk(Chunk* chunk);
 void writeChunk(Chunk* chunk, uint8_t byte, uint8_t line);
-int addConstant(Chunk* chunk, Value value);
+int addConstant(Chunk* chunk, Value* value);
 
 
 //

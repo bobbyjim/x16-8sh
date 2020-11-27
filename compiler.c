@@ -88,11 +88,11 @@ static void errorAt(Token* token, uint8_t errorCode) {
   if (parser_panicMode) return;
   parser_panicMode = true;
 
-  fprintf(stderr, "[line %u] error", token->line);
+  printf("[line %u] error", token->line);
 //  fprintf(stderr, "error_at(): [line ??] error");
 
   if (token->type == TOKEN_EOF) {
-    fprintf(stderr, " at end");
+    printf(" at end");
   } else if (token->type >= TOKEN_ERROR_START) {
     // Nothing.
   } else {
@@ -104,7 +104,7 @@ static void errorAt(Token* token, uint8_t errorCode) {
      printf(" at pos(%d) len(%d)\n", token->start_position, token->length);
   }
 
-  fprintf(stderr, ": %s\n", message);
+  printf(": %s\n", message);
   parser_hadError = true;
 }
 
@@ -177,7 +177,7 @@ static void emitReturn() {
   emitByte(OP_RETURN);
 }
 
-static uint8_t makeConstant(Value value) {
+static uint8_t makeConstant(Value* value) {
   int constant = addConstant(currentChunk(), value);
   if (constant > UINT8_MAX) {
     error(TOKEN_ERROR_TOO_MANY_CONSTANTS); // "too many constants in one chunk.");
@@ -187,8 +187,8 @@ static uint8_t makeConstant(Value value) {
   return (uint8_t)constant;
 }
 
-static void emitConstant(Value value) {
-  printf("   - emit constant: %d\n", value);
+static void emitConstant(Value* value) {
+  printf("   - emit constant: %d\n", value->as.number);
   emitBytes(OP_CONSTANT, makeConstant(value));
 }
 
@@ -201,7 +201,6 @@ static void endCompiler() {
    }
 #endif
 }
-
 
 static void binary() {
   // Remember the operator.
@@ -216,6 +215,13 @@ static void binary() {
 
   // Emit the operator instruction.
   switch (operatorType) {
+    case TOKEN_BANG_EQUAL:    emitBytes(OP_EQUAL, OP_NOT); break;
+    case TOKEN_EQUAL_EQUAL:   emitByte(OP_EQUAL); break;
+    case TOKEN_GREATER:       emitByte(OP_GREATER); break;
+    case TOKEN_GREATER_EQUAL: emitBytes(OP_LESS, OP_NOT); break;
+    case TOKEN_LESS:          emitByte(OP_LESS); break;
+    case TOKEN_LESS_EQUAL:    emitBytes(OP_GREATER, OP_NOT); break;
+
     case TOKEN_PLUS:          emitByte(OP_ADD); break;
     case TOKEN_MINUS:         emitByte(OP_SUBTRACT); break;
     case TOKEN_STAR:          emitByte(OP_MULTIPLY); break;
@@ -225,8 +231,19 @@ static void binary() {
   }
 }
 
+static void literal() {
+  switch (parser_previous->type) {
+    case TOKEN_FALSE: emitByte(OP_FALSE); break;
+    case TOKEN_NIL: emitByte(OP_NIL); break;
+    case TOKEN_TRUE: emitByte(OP_TRUE); break;
+    default:
+      return; // Unreachable.
+  }
+}
+
 static void number() {
   int value;
+  Value rval;
   setBank(compiler_source_bank);
   bankgets(compilerTempBuffer, parser_previous->length, parser_previous->start_position);
   value = atoi(compilerTempBuffer);
@@ -237,7 +254,9 @@ static void number() {
      parser_previous->length,
      value);
 */
-  emitConstant(value);
+  rval.as.number = value;
+  rval.type      = VAL_NUMBER;
+  emitConstant(&rval); // was: value
 }
 
 static void grouping() {
@@ -254,6 +273,7 @@ static void unary() {
 
   // Emit the operator instruction.
   switch (operatorType) {
+    case TOKEN_BANG : emitByte(OP_NOT);    break;
     case TOKEN_MINUS: emitByte(OP_NEGATE); break;
     default:
       return; // Unreachable.
@@ -286,23 +306,25 @@ void initPrattTable()
    ParseRule(TOKEN_SEMICOLON    ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_SLASH        ,NULL,    binary,PREC_FACTOR);
    ParseRule(TOKEN_STAR         ,NULL,    binary,PREC_FACTOR);
-   ParseRule(TOKEN_BANG         ,NULL,    NULL,  PREC_NONE);
-   ParseRule(TOKEN_BANG_EQUAL   ,NULL,    NULL,  PREC_NONE);
+   ParseRule(TOKEN_BANG         ,unary,   NULL,  PREC_NONE);
+   ParseRule(TOKEN_BANG_EQUAL   ,NULL,    binary,  PREC_EQUALITY);
    ParseRule(TOKEN_EQUAL        ,NULL,    NULL,  PREC_NONE);
-   ParseRule(TOKEN_EQUAL_EQUAL  ,NULL,    NULL,  PREC_NONE);
-   ParseRule(TOKEN_GREATER      ,NULL,    NULL,  PREC_NONE);
-   ParseRule(TOKEN_GREATER_EQUAL,NULL,    NULL,  PREC_NONE);
-   ParseRule(TOKEN_LESS         ,NULL,    NULL,  PREC_NONE);
-   ParseRule(TOKEN_LESS_EQUAL   ,NULL,    NULL,  PREC_NONE);
+   ParseRule(TOKEN_EQUAL_EQUAL  ,NULL,    binary,  PREC_EQUALITY);
+   ParseRule(TOKEN_GREATER      ,NULL,    binary,  PREC_EQUALITY);
+   ParseRule(TOKEN_GREATER_EQUAL,NULL,    binary,  PREC_EQUALITY);
+   ParseRule(TOKEN_LESS         ,NULL,    binary,  PREC_EQUALITY);
+   ParseRule(TOKEN_LESS_EQUAL   ,NULL,    binary,  PREC_EQUALITY);
    ParseRule(TOKEN_IDENTIFIER   ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_STRING       ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_NUMBER       ,number,  NULL,  PREC_NONE);
    ParseRule(TOKEN_AND          ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_ELSE         ,NULL,    NULL,  PREC_NONE);
+   ParseRule(TOKEN_FALSE        ,literal, NULL,  PREC_NONE);
    ParseRule(TOKEN_FOR          ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_SUB          ,NULL,    NULL,  PREC_NONE);
+   ParseRule(TOKEN_TRUE         ,literal, NULL,  PREC_NONE);
    ParseRule(TOKEN_IF           ,NULL,    NULL,  PREC_NONE);
-   ParseRule(TOKEN_NIL          ,NULL,    NULL,  PREC_NONE);
+   ParseRule(TOKEN_NIL          ,literal, NULL,  PREC_NONE);
    ParseRule(TOKEN_OR           ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_ECHO         ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_RETURN       ,NULL,    NULL,  PREC_NONE);
@@ -327,7 +349,7 @@ void debugPrattTable()
 
 static void parsePrecedence(uint8_t precedence) 
 {
-   printf("\nparse-precedence: %d (%s)\n", precedence, debugPrecedence(precedence));
+   printf("\r\nparse-precedence: %d (%s)\n", precedence, debugPrecedence(precedence));
    advance();
 
    printf("   - prev (%s) %d\n", debugToken(parser_previous->type), precedenceRule[parser_previous->type]);

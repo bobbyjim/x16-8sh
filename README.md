@@ -45,7 +45,10 @@ in Bank 1 as needed.
 Arithmetic expressions compile and run.  They can be stored
 in a group (parentheses) as well, but only the first full 
 expression is interpreted.
+Binary is 15.5k.
 
-# GOAL 6, in progress: multiple values.
-Adding more value types (currently only knows integers).
+# GOAL 6, ACHIEVED: multiple values and comparison operations.
+Added true, false, and nil value types.
+Added == >= <= < !
+Binary is 16.8k.
 
