@@ -23,6 +23,8 @@ typedef enum {
   OP_GREATER,
   OP_LESS,
 
+  OP_CAT,
+
   OP_GET,
   OP_PUT,
   OP_PUSH,

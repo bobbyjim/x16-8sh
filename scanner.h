@@ -8,7 +8,7 @@
 typedef struct {
 //   const char* start; // not working. why?
    TokenType type;
-   int       start_position;
+   int       start_position; // BANK OFFSET (NOT A POINTER ANY MORE)
    uint8_t   length;
    int       line;
 } Token;
@@ -71,17 +71,25 @@ void scanAll(uint8_t frombank, uint8_t tobank);
 #define TOKEN_COLON             37
 #define TOKEN_STAR_STAR         38
 #define TOKEN_PIPE		39
-#define TOKEN_AMP               40
-#define TOKEN_OCTOTHORPE        41
+#define TOKEN_STAR_EQUAL	40
+#define TOKEN_SLASH_EQUAL	41
 
-#define TOKEN_SEQ		42
-#define TOKEN_SNE		43
+#define TOKEN_UP		44
+#define TOKEN_AMP               45
+#define TOKEN_LEFT_ARROW	46
 
-#define TOKEN_DOTDOT            44
-#define TOKEN_ENDBLOCK          45
+#define TOKEN_S_NE		48
+#define TOKEN_S_GT		49
+#define TOKEN_S_GTE		50
+#define TOKEN_S_EQ		51
+#define TOKEN_S_LTE		52
+#define TOKEN_S_LT		53
 
-#define TOKEN_TRUE		46
-#define TOKEN_FALSE		47
+#define TOKEN_DOTDOT            54
+#define TOKEN_ENDBLOCK          55
+
+#define TOKEN_TRUE		56
+#define TOKEN_FALSE		57
 
 #define TOKEN_EOF               63
 

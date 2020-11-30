@@ -1,4 +1,4 @@
-.obj/memory.o:	memory.c memory.h
+.obj/memory.o:	memory.c vm.h chunk.h value.h common.h memory.h object.h
 
-memory.c memory.h:
+memory.c vm.h chunk.h value.h common.h memory.h object.h:
 

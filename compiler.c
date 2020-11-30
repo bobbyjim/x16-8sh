@@ -6,6 +6,8 @@
 #include "scanner.h"
 #include "chunk.h"
 #include "bank.h"
+#include "value.h"
+#include "object.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
@@ -226,6 +228,8 @@ static void binary() {
     case TOKEN_MINUS:         emitByte(OP_SUBTRACT); break;
     case TOKEN_STAR:          emitByte(OP_MULTIPLY); break;
     case TOKEN_SLASH:         emitByte(OP_DIVIDE); break;
+
+    case TOKEN_DOT:           emitByte(OP_CAT); break; // string catenation
     default:
       return; // Unreachable.
   }
@@ -258,6 +262,23 @@ static void number() {
   rval.type      = VAL_NUMBER;
   emitConstant(&rval); // was: value
 }
+
+static void string() {
+   Obj* str;
+   Value val; // this doesn't feel kosher, but it works
+   setBank(compiler_source_bank);
+
+   str = (Obj*) copyString(parser_previous->start_position + 1,
+                           parser_previous->length - 2);
+
+   //printf("object type: %d\n", str->type);
+   val = *objVal(str);
+   //printf("value type: %d\n", val.type);
+   //printf("value->obj type: %d\n", val.as.obj->type);
+   printObject(&val);
+   emitConstant(&val);
+}
+
 
 static void grouping() {
   expression();
@@ -300,7 +321,7 @@ void initPrattTable()
    ParseRule(TOKEN_LEFT_BRACE   ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_RIGHT_BRACE  ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_COMMA        ,NULL,    NULL,  PREC_NONE);
-   ParseRule(TOKEN_DOT          ,NULL,    NULL,  PREC_NONE);
+   ParseRule(TOKEN_DOT          ,NULL,    binary,PREC_TERM);
    ParseRule(TOKEN_MINUS        ,unary,   binary,PREC_TERM);
    ParseRule(TOKEN_PLUS         ,NULL,    binary,PREC_TERM);
    ParseRule(TOKEN_SEMICOLON    ,NULL,    NULL,  PREC_NONE);
@@ -315,7 +336,7 @@ void initPrattTable()
    ParseRule(TOKEN_LESS         ,NULL,    binary,  PREC_EQUALITY);
    ParseRule(TOKEN_LESS_EQUAL   ,NULL,    binary,  PREC_EQUALITY);
    ParseRule(TOKEN_IDENTIFIER   ,NULL,    NULL,  PREC_NONE);
-   ParseRule(TOKEN_STRING       ,NULL,    NULL,  PREC_NONE);
+   ParseRule(TOKEN_STRING       ,string,  NULL,  PREC_NONE);
    ParseRule(TOKEN_NUMBER       ,number,  NULL,  PREC_NONE);
    ParseRule(TOKEN_AND          ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_ELSE         ,NULL,    NULL,  PREC_NONE);

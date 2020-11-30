@@ -1,6 +1,8 @@
 #ifndef _bank_h
 #define _bank_h
 
+#include <stdint.h>
+
 void setBank(int bank);
 
 int bankgets(char* toBuffer, int len, int pos);

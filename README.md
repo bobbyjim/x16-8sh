@@ -52,3 +52,5 @@ Added true, false, and nil value types.
 Added == >= <= < !
 Binary is 16.8k.
 
+# GOAL 7, ACHIEVED: strings and string ops added.
+Binary is 18k.

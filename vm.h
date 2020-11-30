@@ -15,12 +15,15 @@ typedef struct {
    uint8_t* ip;
    Value stack[STACK_MAX];
    Value* stackTop;
+   Obj* objects;
 } VM;
 
 #define InterpretResult uint8_t
 #define INTERPRET_OK 			0
 #define INTERPRET_COMPILE_ERROR		1
 #define INTERPRET_RUNTIME_ERROR		2
+
+extern VM vm;
 
 void initVM();
 void freeVM();

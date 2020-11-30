@@ -13,12 +13,12 @@
 
 #include "debug.h"
 
-uint8_t scanner_bank;              //  Scanner workspace.
+uint8_t source_bank;
 int     scanner_start_position;    // 
 int     scanner_current_position;  // 
 int     scanner_line;              // 
 
-uint8_t token_bank;                //  Token output bank.
+uint8_t token_bank;
 int     token_rw_head_position;    //  Current token input/output position.
 int     token_count;               //  Total # of tokens.
 
@@ -143,20 +143,36 @@ static TokenType identifierType()
 //    case 'b': 
 //    case 'c': 
       case 'd': return checkKeyword(1, 3, "one",   TOKEN_ENDBLOCK); // done
-      case 'e': return checkKeyword(1, 3, "lse",   TOKEN_ELSE);
+      case 'e': 
+	if (checkKeyword(1, 3, "lse",   TOKEN_ELSE) == TOKEN_ELSE)
+	   return TOKEN_ELSE;
+  	return checkKeyword(1, 1, "q", TOKEN_S_EQ);
+
       case 'f': 
 	if (checkKeyword(1, 2, "or",    TOKEN_FOR) == TOKEN_FOR)
 	   return TOKEN_FOR;
         return checkKeyword(1, 4, "alse",  TOKEN_FALSE);
 	
-//    case 'g':
+      case 'g': 
+	if (checkKeyword(1, 2, "te",    TOKEN_S_GTE) == TOKEN_S_GTE)
+	   return TOKEN_S_GTE;
+	return checkKeyword(1, 1, "t", TOKEN_S_GT);
+      
 //    case 'h': 
       case 'i': return checkKeyword(1, 1, "f",     TOKEN_IF);
 //    case 'j':
 //    case 'k':
-//    case 'l':
+      case 'l': 
+	if (checkKeyword(1, 2, "te",    TOKEN_S_LTE) == TOKEN_S_LTE)
+	   return TOKEN_S_LTE;
+	return checkKeyword(1, 1, "t", TOKEN_S_LT);
+      
 //    case 'm':
-      case 'n': return checkKeyword(1, 2, "il",    TOKEN_NIL);
+      case 'n': 
+	if (checkKeyword(1, 2, "il",    TOKEN_NIL) == TOKEN_NIL)
+	   return TOKEN_NIL;
+	return checkKeyword(1, 1, "e", TOKEN_S_NE);
+
 //    case 'o': 
       case 'p': return checkKeyword(1, 1, "r",     TOKEN_ECHO); // pr = print = echo
 //    case 'q':
@@ -234,7 +250,7 @@ TokenType string() {
 *************************************************************/
 void initScanner(uint8_t sourceBank, uint8_t tokenBank)
 {
-   scanner_bank             = sourceBank;
+   source_bank             = sourceBank;
    scanner_start_position   = 0; 
    scanner_current_position = 0;
    scanner_line             = 1;
@@ -253,7 +269,7 @@ TokenType scanToken()
 {
    char c;
 
-   setBank(scanner_bank); // just in case
+   setBank(source_bank); // just in case
 
    skipWhitespace();
    scanner_start_position = scanner_current_position; 
@@ -270,16 +286,11 @@ TokenType scanToken()
       // one-char tokens
       case '(': return makeToken(TOKEN_LEFT_PAREN);
       case ')': return makeToken(TOKEN_RIGHT_PAREN);
-//      case ':': return makeToken(TOKEN_COLON);
+      case ':': return makeToken(TOKEN_COLON);
       case ';': return makeToken(TOKEN_SEMICOLON);
       case ',': return makeToken(TOKEN_COMMA);
 
-      case '-': return makeToken(TOKEN_MINUS);
-      case '+': return makeToken(TOKEN_PLUS);
-      case '*': return makeToken(TOKEN_STAR);
-      case '/': return makeToken(TOKEN_SLASH);
-
-      case '.': return makeToken(TOKEN_DOT);
+      case '^': return makeToken(TOKEN_UP);
 
 
       // potential two-char tokens
@@ -287,14 +298,14 @@ TokenType scanToken()
       case '=': return makeToken(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
       case '<': return makeToken(match('=') ? TOKEN_LESS_EQUAL  : TOKEN_LESS);
       case '>': return makeToken(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
-//    case '-': return makeToken(match('=') ? TOKEN_MINUS_EQUAL : TOKEN_MINUS );
-//    case '+': return makeToken(match('=') ? TOKEN_PLUS_EQUAL  : TOKEN_PLUS);
-//    case '*': return makeToken(match('=') ? TOKEN_STAR_EQUAL  : TOKEN_STAR );
-//    case '/': return makeToken(match('=') ? TOKEN_SLASH_EQUAL : TOKEN_SLASH );
+      case '-': return makeToken(match('=') ? TOKEN_MINUS_EQUAL : TOKEN_MINUS );
+      case '+': return makeToken(match('=') ? TOKEN_PLUS_EQUAL  : TOKEN_PLUS);
+      case '*': return makeToken(match('=') ? TOKEN_STAR_EQUAL  : TOKEN_STAR );
+      case '/': return makeToken(match('=') ? TOKEN_SLASH_EQUAL : TOKEN_SLASH );
 
-      case '|': return makeToken(match('|') ? TOKEN_OR     : TOKEN_OR ); // PIPE );
-      case '&': return makeToken(match('&') ? TOKEN_AND    : TOKEN_AND ); // AMP );
-//      case '.': return makeToken(match('.') ? TOKEN_DOTDOT : TOKEN_DOT );
+      case '|': return makeToken(match('|') ? TOKEN_OR     : TOKEN_PIPE  );
+      case '&': return makeToken(match('&') ? TOKEN_AND    : TOKEN_AMP   );
+      case '.': return makeToken(match('.') ? TOKEN_DOTDOT : TOKEN_DOT   );
 
       // strings
       case '"': return string();
@@ -380,7 +391,7 @@ void scanAll(uint8_t frombank, uint8_t tobank)
       printf("scanner start    : %d\n", scanner_start_position);    // 
       printf("scanner current  : %d\n", scanner_current_position);  // 
       printf("scanner line     : %d\n", scanner_line);              // 
-      printf("scanner bank     : %d\n", scanner_bank);              //  Scanner workspace.
+      printf("source bank      : %d\n", source_bank);              //  Scanner workspace.
 */
 
       writeToken();

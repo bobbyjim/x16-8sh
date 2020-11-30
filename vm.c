@@ -8,6 +8,8 @@
 #include "compiler.h"
 #include "vm.h"
 #include "debug.h"
+#include "object.h"
+#include "memory.h"
 
 VM vm;
 
@@ -41,6 +43,7 @@ static void runtimeError(const char* format, ...)
 
 void initVM() {
    resetStack();
+   vm.objects = NULL;
 
    // set some constants
    setNil(&NIL_OBJ);
@@ -50,6 +53,7 @@ void initVM() {
 }
 
 void freeVM() {
+   freeObjects();
 }
 
 void push(Value* value) {
@@ -74,6 +78,27 @@ Value* peek(int distance)
 static bool isFalsey(Value* value)
 {
    return IS_NIL(*value) || (IS_BOOL(*value) && !AS_BOOL(*value));
+}
+
+static void concatenate() {
+  ObjString* b = AS_STRING(*pop());
+  ObjString* a = AS_STRING(*pop());
+  ObjString* result;
+  Value obj;
+
+  int length = a->length + b->length;
+  char* chars = ALLOCATE(char, length + 1);
+  memcpy(chars, a->chars, a->length);
+  memcpy(chars + a->length, b->chars, b->length);
+  chars[length] = '\0';
+
+  result = takeString(chars, length);
+
+  obj.type = VAL_OBJ;
+  obj.as.obj = (Obj*) result;
+  
+  //push(OBJ_VAL(result));
+  push(&obj);
 }
 
 ////////////////////////////////////////////////////////////
@@ -182,6 +207,18 @@ static InterpretResult run() {
          while(aa > bb) aa -= bb;
          a->as.number = aa;
          break;
+      }
+
+      case OP_CAT:
+      {
+        if (IS_STRING(*peek(0)) && IS_STRING(*peek(1))) {
+          concatenate();
+        } else {
+          runtimeError(
+              "Operands must be two strings.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+        break;
       }
 
       case OP_RETURN: 

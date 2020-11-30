@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include "object.h"
 #include "vm.h"
 
 bool compile(uint8_t sourceBank, uint8_t tokenBank, Chunk* chunk);
