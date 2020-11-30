@@ -8,9 +8,10 @@ A shell is a command line interpreter. It provides:
 * a scripting language, for example to allow conditional command execution and state checking.
 
 # Architecture
-The Commander X16 has a set of 8K "high RAM" banks for data storage.  I plan to make full
-use of them for storing everything I can there.  For now, I am using two banks: one for the
-script source (for now, that is the repl input line), and one to hold token metadata.
+The Commander X16 has two RAM areas: a main program area nearly 40K in size, and a set of 8K "high RAM" 
+banks for data storage.  I plan to make full use of them for storing everything I can there.  For now, 
+I am using two banks: one for the script source (for now, that is the repl input line), and one to hold 
+token metadata.
 
 I think it might be cool to load several scripts at once.  Assuming a limit of 8K per script,
 I could use bank N to store scripts, bank N+2 for its tokens, and bank N+3 for output.  Maybe.
