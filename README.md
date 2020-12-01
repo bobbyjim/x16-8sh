@@ -52,25 +52,9 @@ storing the metadata about each token in Bank 2.  Each token
 metadata is 6 bytes long, and points back to the source text
 in Bank 1 as needed.
 
-<<<<<<< HEAD
 # STATUS
 (15.5k) Expressions.
 (16.8k) Comparison ops. 
 (18k) Strings. 11/28/2020.
 (20k) PRINT statement. 12/1/2020.
 
-=======
-# GOAL ACHIEVED: Expression parsing.
-Arithmetic expressions compile and run.  They can be stored
-in a group (parentheses) as well, but only the first full 
-expression is interpreted.
-Binary is 15.5k.
-
-# GOAL ACHIEVED: multiple values and comparison operations.
-Added true, false, and nil value types.
-Added == >= <= < !
-Binary is 16.8k.
-
-# GOAL ACHIEVED: strings and string ops added.
-Binary is 18k.
->>>>>>> 1d6f74d839f08ad7e1a82f7505f01f9a8e96fba9
