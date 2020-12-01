@@ -7,6 +7,8 @@
 
 #include "bank.h"
 
+#define CAPACITY 75
+
 typedef struct {
    int exponent :8;
    long mantissa;
@@ -19,7 +21,12 @@ char* current;
 void repl()
 {
    int bank = 1;
+   int foobar = 10;
 
+   if (bank * 100 < foobar * CAPACITY)
+      printf("ok\n");
+
+/*
    for(;;)
    {
       cputs("% ");
@@ -34,6 +41,7 @@ void repl()
       bankgets(fetchBuffer, sizeof(fetchBuffer), 0);
       puts(fetchBuffer);
    }
+*/
 }
 
 

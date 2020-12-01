@@ -30,7 +30,7 @@ typedef enum {
   OP_PUSH,
   OP_POP,
   OP_RM,
-  OP_ECHO,
+  OP_PRINT,
   OP_JUMP,
   OP_JNE,
   OP_LOOP,
@@ -77,7 +77,7 @@ int addConstant(Chunk* chunk, Value* value);
 
 #define OP_RM		0x00
 
-#define OP_ECHO     	0x00
+#define OP_PRINT     	0x00
 #define OP_JUMP     	0x00
 #define OP_JNE      	0x00
 

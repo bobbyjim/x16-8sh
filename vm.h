@@ -3,9 +3,9 @@
 
 #include "chunk.h"
 #include "value.h"
+#include "hash.h"
 
 #define STACK_MAX 256
-
 
 //
 //  Next to go.  Nuff said.
@@ -16,7 +16,9 @@ typedef struct {
    Value stack[STACK_MAX];
    Value* stackTop;
    Obj* objects;
+   Hash internedStrings; // interned string hashtable
 } VM;
+
 
 #define InterpretResult uint8_t
 #define INTERPRET_OK 			0

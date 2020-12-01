@@ -44,6 +44,7 @@ static void runtimeError(const char* format, ...)
 void initVM() {
    resetStack();
    vm.objects = NULL;
+   initHash(&vm.internedStrings);
 
    // set some constants
    setNil(&NIL_OBJ);
@@ -53,6 +54,7 @@ void initVM() {
 }
 
 void freeVM() {
+   freeHash(&vm.internedStrings);
    freeObjects();
 }
 
@@ -67,7 +69,7 @@ Value* pop() {
 }
 
 Value* top() {
-  return vm.stackTop; // without popping
+  return vm.stackTop-1; // without popping
 }
 
 Value* peek(int distance)
@@ -115,18 +117,16 @@ static InterpretResult run() {
 #define LOGICAL_OP(op) \
     do { \
       Value* b = pop(); \
-      Value* a = pop(); \
+      Value* a = top(); \
       a->as.boolean = a->as.number op b->as.number; \
       a->type = VAL_BOOL; \
-      push(a); \
     } while (false)
 
 #define BINARY_OP(op) \
     do { \
       Value* b = pop(); \
-      Value* a = pop(); \
+      Value* a = top(); \
       a->as.number = a->as.number op b->as.number; \
-      push(a); \
     } while (false)
 
 
@@ -164,10 +164,9 @@ static InterpretResult run() {
       case OP_EQUAL:    
       {
          Value* b = pop();
-         Value* a = pop();
+         Value* a = top();
 	 a->as.boolean = valuesEqual(a,b);
          a->type = VAL_BOOL;
-         push(a);
          break;
       }
 
@@ -181,20 +180,18 @@ static InterpretResult run() {
 
       case OP_NOT:
       {
-         Value* v = pop();
+         Value* v = top();
          printf("value = %d,%d\n", v->type, v->as.boolean);
          v->as.boolean = isFalsey(v);
          v->type = VAL_BOOL;
          printf("value = %d,%d\n", v->type, v->as.boolean);
-         push(v);
          break;
       }
 
       case OP_NEGATE:   
       {
-         Value* v = pop();
+         Value* v = top();
          v->as.number = -v->as.number;
-         push(v);
 	 break;
       }
 
@@ -204,8 +201,8 @@ static InterpretResult run() {
          Value* a = top();
          int bb = b->as.number;
          int aa = a->as.number;
-         while(aa > bb) aa -= bb;
-         a->as.number = aa;
+         //while(aa >= bb) aa -= bb;
+         a->as.number = aa % bb;
          break;
       }
 
@@ -221,11 +218,17 @@ static InterpretResult run() {
         break;
       }
 
+      case OP_PRINT:
+      {
+         printValue(pop());
+         printf("\n");
+         break;
+      }
+
       case OP_RETURN: 
       {
-        printValue(pop());
-        printf("\n");
-        return INTERPRET_OK;
+         // Exit interpeter.
+         return INTERPRET_OK;
       }
 
     }

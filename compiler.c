@@ -25,6 +25,7 @@
 #define  PREC_CALL         9
 #define  PREC_PRIMARY      10
 
+#define  EQ(a,b)	!strcmp(a,b)
 
 uint8_t compiler_source_bank;
 uint8_t compiler_token_bank;
@@ -50,10 +51,18 @@ uint8_t precedenceRule[MAX_TABLE_TOKEN_VALUE];
 
 Chunk* compilingChunk;
 
+#define CURRENT_CHUNK	compilingChunk
+#define CHECK(type)     (parser_current->type == type)
+
+////////////////////////////////////////////////
 //
 //   Forward declarations.
 //
+////////////////////////////////////////////////
+void lineDebugger();
 static void expression();
+static void statement();
+static void declaration();
 static uint8_t getRuleNum(TokenType type);
 static void parsePrecedence(uint8_t precedence);
 
@@ -80,9 +89,11 @@ char* translateErrorCode(uint8_t errorCode)
    }
 }
 
+/*
 static Chunk* currentChunk() {
   return compilingChunk;
 }
+*/
 
 static void errorAt(Token* token, uint8_t errorCode) {
 
@@ -156,6 +167,7 @@ static void advance()
 }
 
 static void consume(TokenType type, uint8_t errorCode) {
+
   if (parser_current->type == type) {
     advance();
     return;
@@ -164,8 +176,23 @@ static void consume(TokenType type, uint8_t errorCode) {
   errorAtCurrent(errorCode);
 }
 
+/*
+static bool check(TokenType type)
+{
+   return parser_current->type == type;
+}
+*/
+
+static bool match(TokenType type)
+{
+   if (!CHECK(type)) return false;
+   advance();
+   return true;
+}
+
 static void emitByte(uint8_t byte) {
-  writeChunk(currentChunk(), byte, -1); // parser_previous.line);
+  writeChunk(CURRENT_CHUNK, byte, -1); // parser_previous.line);
+
 
   // disassembleChunk...
 }
@@ -180,7 +207,7 @@ static void emitReturn() {
 }
 
 static uint8_t makeConstant(Value* value) {
-  int constant = addConstant(currentChunk(), value);
+  int constant = addConstant(CURRENT_CHUNK, value);
   if (constant > UINT8_MAX) {
     error(TOKEN_ERROR_TOO_MANY_CONSTANTS); // "too many constants in one chunk.");
     return 0;
@@ -199,7 +226,7 @@ static void endCompiler() {
 
 #ifdef DEBUG_PRINT_CODE
    if (!parser_hadError) {
-      disassembleChunk(currentChunk(), "code");
+      disassembleChunk(CURRENT_CHUNK, "code");
    }
 #endif
 }
@@ -219,6 +246,7 @@ static void binary() {
   switch (operatorType) {
     case TOKEN_BANG_EQUAL:    emitBytes(OP_EQUAL, OP_NOT); break;
     case TOKEN_EQUAL_EQUAL:   emitByte(OP_EQUAL); break;
+    case TOKEN_S_EQ:          emitByte(OP_EQUAL); break;
     case TOKEN_GREATER:       emitByte(OP_GREATER); break;
     case TOKEN_GREATER_EQUAL: emitBytes(OP_LESS, OP_NOT); break;
     case TOKEN_LESS:          emitByte(OP_LESS); break;
@@ -228,6 +256,7 @@ static void binary() {
     case TOKEN_MINUS:         emitByte(OP_SUBTRACT); break;
     case TOKEN_STAR:          emitByte(OP_MULTIPLY); break;
     case TOKEN_SLASH:         emitByte(OP_DIVIDE); break;
+    case TOKEN_MOD:           emitByte(OP_MODULO); break;
 
     case TOKEN_DOT:           emitByte(OP_CAT); break; // string catenation
     default:
@@ -326,6 +355,7 @@ void initPrattTable()
    ParseRule(TOKEN_PLUS         ,NULL,    binary,PREC_TERM);
    ParseRule(TOKEN_SEMICOLON    ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_SLASH        ,NULL,    binary,PREC_FACTOR);
+   ParseRule(TOKEN_MOD          ,NULL,    binary,PREC_FACTOR); 
    ParseRule(TOKEN_STAR         ,NULL,    binary,PREC_FACTOR);
    ParseRule(TOKEN_BANG         ,unary,   NULL,  PREC_NONE);
    ParseRule(TOKEN_BANG_EQUAL   ,NULL,    binary,  PREC_EQUALITY);
@@ -347,7 +377,7 @@ void initPrattTable()
    ParseRule(TOKEN_IF           ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_NIL          ,literal, NULL,  PREC_NONE);
    ParseRule(TOKEN_OR           ,NULL,    NULL,  PREC_NONE);
-   ParseRule(TOKEN_ECHO         ,NULL,    NULL,  PREC_NONE);
+   ParseRule(TOKEN_PRINT        ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_RETURN       ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_WHILE        ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_EOF          ,NULL,    NULL,  PREC_NONE);
@@ -373,8 +403,8 @@ static void parsePrecedence(uint8_t precedence)
    printf("\r\nparse-precedence: %d (%s)\n", precedence, debugPrecedence(precedence));
    advance();
 
-   printf("   - prev (%s) %d\n", debugToken(parser_previous->type), precedenceRule[parser_previous->type]);
-   printf("   - curr (%s) %d\n", debugToken(parser_current->type), precedenceRule[parser_current->type]);
+   printf("   - prev (%s) pr=%d\n", debugToken(parser_previous->type), precedenceRule[parser_previous->type]);
+   printf("   - curr (%s) pr=%d\n", debugToken(parser_current->type), precedenceRule[parser_current->type]);
    printf("\n");
 
    //
@@ -427,6 +457,35 @@ static void expression() {
    parsePrecedence(PREC_ASSIGNMENT);
 }
 
+static void printStatement()
+{
+   expression();
+   consume(TOKEN_SEMICOLON, TOKEN_ERROR_SEMICOLON_EXPECTED);
+   emitByte(OP_PRINT);
+}
+
+static void declaration()
+{
+   statement();
+}
+
+static void statement()
+{
+   if (match(TOKEN_PRINT))
+   {
+      printStatement();
+   }
+}
+
+void lineDebugger()
+{
+   char debugLineIn[80];
+
+   printf("<d>    %d %s eof? %d\n", parser_current->type, debugToken(parser_current->type), match(TOKEN_EOF));
+   printf("<d> ");
+   gets(debugLineIn);
+}
+
 bool compile(uint8_t sourceBank, uint8_t tokenBank, Chunk* chunk)
 {
    scanAll(sourceBank, tokenBank);     // in scanner.c
@@ -450,7 +509,12 @@ bool compile(uint8_t sourceBank, uint8_t tokenBank, Chunk* chunk)
    //
    advance();
 
-   expression();
+   // expression();
+   while(!match(TOKEN_EOF))
+   {
+      declaration();
+      if (parser_current->type == TOKEN_EOF) break;
+   }
 
    consume(TOKEN_EOF, TOKEN_ERROR_EXPECT_END_OF_EXPR);
 

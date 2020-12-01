@@ -115,6 +115,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
     case OP_NEGATE: 	return simpleInstruction("op_negate", offset);
 
     case OP_CAT:	return simpleInstruction("op_catenate", offset);
+    case OP_PRINT:      return simpleInstruction("op_print", offset);
     case OP_RETURN: 	return simpleInstruction("op_return", offset);
     default:
       printf("unknown opcode %d\n", instruction);
@@ -172,7 +173,7 @@ char* debugToken(TokenType type)
       case TOKEN_AND           : name = "and";  break;
       case TOKEN_OR            : name = "or";  break;
 //    case TOKEN_DOTDOT        : name = "two dots";  break;
-      case TOKEN_ECHO          : name = "echo";  break;
+      case TOKEN_PRINT         : name = "echo";  break;
       case TOKEN_FOR           : name = "for";  break;
       case TOKEN_IF            : name = "if";  break;
       case TOKEN_RETURN        : name = "return";  break;
@@ -182,7 +183,13 @@ char* debugToken(TokenType type)
       case TOKEN_EOF           : name = "eof";  break;
       case TOKEN_ERROR_UNTERMINATED_STRING  : name = "error: unterminated string";  break;
       case TOKEN_ERROR_UNEXPECTED_CHAR      : name = "error: unexpected char";  break;
-      case TOKEN_ERROR_HALT_CATCH_FIRE      : name = "error: hcf"; break;
+      case TOKEN_ERROR_EXPECT_END_PAREN     : name = "error: ')' expected"; break;
+      case TOKEN_ERROR_EXPECT_END_OF_EXPR   : name = "error: expected end of expression"; break;
+      case TOKEN_ERROR_TOO_MANY_CONSTANTS   : name = "error: too many constants"; break;
+      case TOKEN_ERROR_EXPRESSION_EXPECTED  : name = "error: expression expected"; break;
+      case TOKEN_ERROR_SEMICOLON_EXPECTED   : name = "error: ';' expected"; break;
+
+      case TOKEN_ERROR_HALT_CATCH_FIRE      : name = "error: halt and catch fire"; break;
 
       default                  : name = "n/a"; break;
    }

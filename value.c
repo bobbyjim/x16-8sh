@@ -46,7 +46,8 @@ bool valuesEqual(Value* a, Value* b)
     case VAL_BOOL:   return AS_BOOL(*a) == AS_BOOL(*b);
     case VAL_NIL:    return true;
     case VAL_NUMBER: return AS_NUMBER(*a) == AS_NUMBER(*b);
-    case VAL_OBJ:
+    case VAL_OBJ:    return AS_OBJ(*a) == AS_OBJ(*b);
+/*
     {
       ObjString* aString = AS_STRING(*a);
       ObjString* bString = AS_STRING(*b);
@@ -54,6 +55,7 @@ bool valuesEqual(Value* a, Value* b)
           memcmp(aString->chars, bString->chars,
                  aString->length) == 0;
     }
+*/
     default:
       return false; // Unreachable.
   }

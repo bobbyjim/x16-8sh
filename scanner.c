@@ -136,6 +136,27 @@ static TokenType checkKeyword(int start, int length,
   return TOKEN_IDENTIFIER;
 }
 
+static TokenType checkRelatedKeywords(
+	int start, 
+	int length, 
+	const char* rest,
+	TokenType type,
+	TokenType typeMinusOne)
+{
+  if (scanner_current_position - scanner_start_position == start + length 
+	&& memcmpBank(scanner_start_position+start,rest,length) == 0) {
+    return type;
+  }
+  else 
+  if (scanner_current_position - scanner_start_position == start + length - 1
+	&& memcmpBank(scanner_start_position+start,rest,length-1) == 0) {
+    return typeMinusOne;
+  }
+
+  return TOKEN_IDENTIFIER;
+}
+
+
 static TokenType identifierType()
 { 
    switch (beek(scanner_start_position)) {
@@ -153,28 +174,22 @@ static TokenType identifierType()
 	   return TOKEN_FOR;
         return checkKeyword(1, 4, "alse",  TOKEN_FALSE);
 	
-      case 'g': 
-	if (checkKeyword(1, 2, "te",    TOKEN_S_GTE) == TOKEN_S_GTE)
-	   return TOKEN_S_GTE;
-	return checkKeyword(1, 1, "t", TOKEN_S_GT);
+      case 'g': return checkRelatedKeywords(1, 2, "te", TOKEN_S_GTE, TOKEN_S_GT);
       
 //    case 'h': 
       case 'i': return checkKeyword(1, 1, "f",     TOKEN_IF);
 //    case 'j':
 //    case 'k':
-      case 'l': 
-	if (checkKeyword(1, 2, "te",    TOKEN_S_LTE) == TOKEN_S_LTE)
-	   return TOKEN_S_LTE;
-	return checkKeyword(1, 1, "t", TOKEN_S_LT);
+      case 'l': return checkRelatedKeywords(1, 2, "te", TOKEN_S_LTE, TOKEN_S_LT);
       
-//    case 'm':
+      case 'm': return checkKeyword(1, 2, "od",    TOKEN_MOD);
       case 'n': 
 	if (checkKeyword(1, 2, "il",    TOKEN_NIL) == TOKEN_NIL)
 	   return TOKEN_NIL;
 	return checkKeyword(1, 1, "e", TOKEN_S_NE);
 
 //    case 'o': 
-      case 'p': return checkKeyword(1, 1, "r",     TOKEN_ECHO); // pr = print = echo
+      case 'p': return checkKeyword(1, 1, "r",     TOKEN_PRINT); // pr = print
 //    case 'q':
       case 'r': return checkKeyword(1, 5, "eturn", TOKEN_RETURN);
       case 's': return checkKeyword(1, 2, "ub",    TOKEN_SUB);
@@ -274,7 +289,11 @@ TokenType scanToken()
    skipWhitespace();
    scanner_start_position = scanner_current_position; 
 
-   if (isAtEnd()) return makeToken(TOKEN_EOF);
+   if (isAtEnd())
+   {
+      //printf("found token_eof\n");
+      return makeToken(TOKEN_EOF);
+   }
 
    c = advance();
 

@@ -1,11 +1,11 @@
-SOURCES = main.c scanner.c debug.c chunk.c memory.c value.c vm.c compiler.c bank.c object.c
+SOURCES = main.c scanner.c debug.c chunk.c memory.c value.c vm.c compiler.c bank.c object.c hash.c
 
 PROGRAM = 8SH
 
 CC65_TARGET = cx16
 
 CC	= cl65
-CFLAGS 	= --cpu 65c02 -t $(CC65_TARGET) --create-dep $(<:.c=.d) -O
+CFLAGS 	= --cpu 65c02 -t $(CC65_TARGET) --create-dep $(<:.c=.d) -Ors
 LDFLAGS	= -t $(CC65_TARGET) -m $(PROGRAM).map
 OBJDIR  = .obj
 

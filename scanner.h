@@ -56,7 +56,7 @@ void scanAll(uint8_t frombank, uint8_t tobank);
 #define TOKEN_AND               23
 #define TOKEN_ELSE              24
 #define TOKEN_OR                25
-#define TOKEN_ECHO              26
+#define TOKEN_PRINT             26
 #define TOKEN_RETURN            27
 #define TOKEN_FOR               28
 #define TOKEN_SUB               29
@@ -90,6 +90,7 @@ void scanAll(uint8_t frombank, uint8_t tobank);
 
 #define TOKEN_TRUE		56
 #define TOKEN_FALSE		57
+#define TOKEN_MOD		58
 
 #define TOKEN_EOF               63
 
@@ -104,6 +105,7 @@ void scanAll(uint8_t frombank, uint8_t tobank);
 #define TOKEN_ERROR_EXPECT_END_OF_EXPR          227
 #define TOKEN_ERROR_TOO_MANY_CONSTANTS          228
 #define TOKEN_ERROR_EXPRESSION_EXPECTED         229
+#define TOKEN_ERROR_SEMICOLON_EXPECTED		230
 
 #define TOKEN_ERROR_HALT_CATCH_FIRE		255
 
