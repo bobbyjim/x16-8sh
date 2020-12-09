@@ -53,8 +53,8 @@ metadata is 6 bytes long, and points back to the source text
 in Bank 1 as needed.
 
 # STATUS
-(15.5k) Expressions.
-(16.8k) Comparison ops. 
-(18k) Strings. 11/28/2020.
-(20k) PRINT statement. 12/1/2020.
+* (15.5k) Expressions.
+* (16.8k) Comparison ops. 
+* (18k) Strings. 11/28/2020.
+* (20k) PRINT statement. 12/1/2020.
 
