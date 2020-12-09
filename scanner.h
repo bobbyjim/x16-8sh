@@ -1,3 +1,25 @@
+/*
+  
+    8SH: a command interpreter for 8 bit 'retro' systems.
+    Copyright (C) 2020 Robert Eaglestone
+
+    This file is part of 8SH.
+
+    8SH is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    8SH is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with 8SH.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
 #ifndef _scanner_h
 #define _scanner_h
 
@@ -24,6 +46,12 @@ char* getInputFrom(uint8_t position);
 
 
 void scanAll(uint8_t frombank, uint8_t tobank);
+
+
+#define	PETSCII_SPADE	193
+#define	PETSCII_HEART	211
+#define PETSCII_DIAMOND	218
+#define PETSCII_CLUB	216
 
 
 #define MAX_TABLE_TOKEN_VALUE   64
@@ -59,7 +87,7 @@ void scanAll(uint8_t frombank, uint8_t tobank);
 #define TOKEN_PRINT             26
 #define TOKEN_RETURN            27
 #define TOKEN_FOR               28
-#define TOKEN_SUB               29
+#define TOKEN_FUN               29
 #define TOKEN_IF                30
 #define TOKEN_NIL               31
 #define TOKEN_VAR               32
@@ -73,6 +101,8 @@ void scanAll(uint8_t frombank, uint8_t tobank);
 #define TOKEN_PIPE		39
 #define TOKEN_STAR_EQUAL	40
 #define TOKEN_SLASH_EQUAL	41
+
+#define TOKEN_GETTIME		42
 
 #define TOKEN_UP		44
 #define TOKEN_AMP               45
@@ -91,6 +121,9 @@ void scanAll(uint8_t frombank, uint8_t tobank);
 #define TOKEN_TRUE		56
 #define TOKEN_FALSE		57
 #define TOKEN_MOD		58
+#define TOKEN_DOLLAR		59
+#define TOKEN_SIZE_OF_VAR	60
+#define TOKEN_REGISTER		61
 
 #define TOKEN_EOF               63
 
@@ -106,6 +139,7 @@ void scanAll(uint8_t frombank, uint8_t tobank);
 #define TOKEN_ERROR_TOO_MANY_CONSTANTS          228
 #define TOKEN_ERROR_EXPRESSION_EXPECTED         229
 #define TOKEN_ERROR_SEMICOLON_EXPECTED		230
+#define TOKEN_ERROR_EXPECT_VARIABLE_NAME	231
 
 #define TOKEN_ERROR_HALT_CATCH_FIRE		255
 

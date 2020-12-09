@@ -20,31 +20,12 @@
 
 */
 
-#ifndef _hash_h
-#define _hash_h
+#ifndef _burtle_jsf8_h
+#define _burtle_jsf8_h
 
-#include "common.h"
-#include "value.h"
+#include <stdint.h>
 
-typedef struct {
-  ObjString* key;
-  Value value;
-} Entry;
-
-typedef struct {
-   uint8_t count;
-   uint8_t capacity;
-   Entry* entries;
-} Hash;
-
-
-void initHash(Hash* hash);
-void freeHash(Hash* hash);
-bool hashGet(Hash* table, ObjString* key, Value* value);
-bool hashSet(Hash* table, ObjString* key, Value* value);
-bool hashDelete(Hash* table, ObjString* key);
-void hashAddAll(Hash* from, Hash* to);
-ObjString* hashFindString(Hash* table, const char* chars, int length, uint32_t hash);
-void hashDump(Hash* hash);
+void jsf8_srand(uint8_t seed);
+uint8_t jsf8_srand();
 
 #endif

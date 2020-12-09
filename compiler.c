@@ -1,3 +1,25 @@
+/*
+  
+    8SH: a command interpreter for 8 bit 'retro' systems.
+    Copyright (C) 2020 Robert Eaglestone
+
+    This file is part of 8SH.
+
+    8SH is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    8SH is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with 8SH.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -26,6 +48,8 @@
 #define  PREC_PRIMARY      10
 
 #define  EQ(a,b)	!strcmp(a,b)
+
+uint8_t initialized = 0;
 
 uint8_t compiler_source_bank;
 uint8_t compiler_token_bank;
@@ -65,6 +89,7 @@ static void statement();
 static void declaration();
 static uint8_t getRuleNum(TokenType type);
 static void parsePrecedence(uint8_t precedence);
+static uint8_t identifierConstant(Token* name);
 
 
 void copyToTempBuffer(uint8_t startPosition, uint8_t length)
@@ -192,9 +217,7 @@ static bool match(TokenType type)
 
 static void emitByte(uint8_t byte) {
   writeChunk(CURRENT_CHUNK, byte, -1); // parser_previous.line);
-
-
-  // disassembleChunk...
+  //disassembleChunk(CURRENT_CHUNK, "code");
 }
 
 static void emitBytes(uint8_t byte1, uint8_t byte2) {
@@ -208,16 +231,16 @@ static void emitReturn() {
 
 static uint8_t makeConstant(Value* value) {
   int constant = addConstant(CURRENT_CHUNK, value);
-  if (constant > UINT8_MAX) {
+  if (constant > 255) {
     error(TOKEN_ERROR_TOO_MANY_CONSTANTS); // "too many constants in one chunk.");
     return 0;
   }
 
-  return (uint8_t)constant;
+  return (uint8_t) constant;
 }
 
 static void emitConstant(Value* value) {
-  printf("   - emit constant: %d\n", value->as.number);
+//  printf("emit-constant()\n");
   emitBytes(OP_CONSTANT, makeConstant(value));
 }
 
@@ -239,7 +262,6 @@ static void binary() {
   uint8_t  ruleNum = getRuleNum(operatorType);
   uint8_t  rule_precedence = precedenceRule[ ruleNum ];
 
-  printf("   - binary(): calling parse-precedence(%d)\n", rule_precedence + 1);
   parsePrecedence(rule_precedence + 1);
 
   // Emit the operator instruction.
@@ -267,19 +289,20 @@ static void binary() {
 static void literal() {
   switch (parser_previous->type) {
     case TOKEN_FALSE: emitByte(OP_FALSE); break;
-    case TOKEN_NIL: emitByte(OP_NIL); break;
-    case TOKEN_TRUE: emitByte(OP_TRUE); break;
+    case TOKEN_NIL:   emitByte(OP_NIL); break;
+    case TOKEN_TRUE:  emitByte(OP_TRUE); break;
+    case TOKEN_GETTIME: emitByte(OP_GETTIME); break;
     default:
       return; // Unreachable.
   }
 }
 
 static void number() {
-  int value;
+  NUMBER_TYPE value;
   Value rval;
   setBank(compiler_source_bank);
   bankgets(compilerTempBuffer, parser_previous->length, parser_previous->start_position);
-  value = atoi(compilerTempBuffer);
+  value = NUMBER_PARSE(compilerTempBuffer);
 /*
   printf("\n converted (%s) at (%d) with length (%u) to int (%d)\n", 
      compilerTempBuffer, 
@@ -304,8 +327,18 @@ static void string() {
    val = *objVal(str);
    //printf("value type: %d\n", val.type);
    //printf("value->obj type: %d\n", val.as.obj->type);
-   printObject(&val);
+
+   //printObject(&val);
    emitConstant(&val);
+}
+
+static void namedVariable(Token* name) {
+  uint8_t arg = identifierConstant(name);
+  emitBytes(OP_GET_GLOBAL, arg);
+}
+
+static void variable() {
+  namedVariable(parser_previous);
 }
 
 
@@ -365,14 +398,15 @@ void initPrattTable()
    ParseRule(TOKEN_GREATER_EQUAL,NULL,    binary,  PREC_EQUALITY);
    ParseRule(TOKEN_LESS         ,NULL,    binary,  PREC_EQUALITY);
    ParseRule(TOKEN_LESS_EQUAL   ,NULL,    binary,  PREC_EQUALITY);
-   ParseRule(TOKEN_IDENTIFIER   ,NULL,    NULL,  PREC_NONE);
+   ParseRule(TOKEN_IDENTIFIER   ,variable,NULL,  PREC_NONE);
    ParseRule(TOKEN_STRING       ,string,  NULL,  PREC_NONE);
    ParseRule(TOKEN_NUMBER       ,number,  NULL,  PREC_NONE);
    ParseRule(TOKEN_AND          ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_ELSE         ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_FALSE        ,literal, NULL,  PREC_NONE);
    ParseRule(TOKEN_FOR          ,NULL,    NULL,  PREC_NONE);
-   ParseRule(TOKEN_SUB          ,NULL,    NULL,  PREC_NONE);
+   ParseRule(TOKEN_FUN          ,NULL,    NULL,  PREC_NONE);
+   ParseRule(TOKEN_GETTIME	,literal, NULL,  PREC_NONE);
    ParseRule(TOKEN_TRUE         ,literal, NULL,  PREC_NONE);
    ParseRule(TOKEN_IF           ,NULL,    NULL,  PREC_NONE);
    ParseRule(TOKEN_NIL          ,literal, NULL,  PREC_NONE);
@@ -400,12 +434,12 @@ void debugPrattTable()
 
 static void parsePrecedence(uint8_t precedence) 
 {
-   printf("\r\nparse-precedence: %d (%s)\n", precedence, debugPrecedence(precedence));
+   //printf("\r\nparse-precedence: %d (%s)\n", precedence, debugPrecedence(precedence));
    advance();
 
-   printf("   - prev (%s) pr=%d\n", debugToken(parser_previous->type), precedenceRule[parser_previous->type]);
-   printf("   - curr (%s) pr=%d\n", debugToken(parser_current->type), precedenceRule[parser_current->type]);
-   printf("\n");
+   //printf("   - prev (%s) pr=%d\n", debugToken(parser_previous->type), precedenceRule[parser_previous->type]);
+   //printf("   - curr (%s) pr=%d\n", debugToken(parser_current->type), precedenceRule[parser_current->type]);
+   //printf("\n");
 
    //
    //  The prefix rule MUST exist.  Why?
@@ -446,6 +480,33 @@ static void parsePrecedence(uint8_t precedence)
    }
 }
 
+static uint8_t identifierConstant(Token* name) 
+{
+  //return makeConstant(OBJ_VAL(copyString(name->start,
+  //                                       name->length)));
+
+  Value obj;
+  ObjString* str;
+  
+  setBank(compiler_source_bank);
+  str = copyString(name->start_position, name->length);
+  obj.type = VAL_OBJ;
+  obj.as.obj = (Obj*) str;
+ 
+  return makeConstant(&obj);
+}
+
+static uint8_t parseVariable(uint8_t errorMessage) { // const char* errorMessage) {
+//  printf("parse-variable()\n");
+  consume(TOKEN_IDENTIFIER, errorMessage);
+  return identifierConstant(parser_previous);
+}
+
+static void defineVariable(uint8_t global) {
+  printf("define-variable %u\n", global);
+  emitBytes(OP_DEFINE_GLOBAL, global);
+}
+
 static uint8_t getRuleNum(TokenType type) {
    return type; 
 }
@@ -457,6 +518,26 @@ static void expression() {
    parsePrecedence(PREC_ASSIGNMENT);
 }
 
+static void varDeclaration() {
+  uint8_t global = parseVariable(TOKEN_ERROR_EXPECT_VARIABLE_NAME); // "Expect variable name.");
+
+  if (match(TOKEN_EQUAL)) {
+    expression();
+  } else {
+    emitByte(OP_NIL);
+  }
+  consume(TOKEN_SEMICOLON, TOKEN_ERROR_SEMICOLON_EXPECTED);
+
+  defineVariable(global);
+}
+
+static void expressionStatement()
+{
+   expression();
+   consume(TOKEN_SEMICOLON, TOKEN_ERROR_SEMICOLON_EXPECTED);
+   emitByte(OP_POP);
+}
+
 static void printStatement()
 {
    expression();
@@ -464,9 +545,43 @@ static void printStatement()
    emitByte(OP_PRINT);
 }
 
+static void synchronize() {
+  parser_panicMode = false;
+
+  while (parser_current->type != TOKEN_EOF) {
+    if (parser_previous->type == TOKEN_SEMICOLON) return;
+
+    switch (parser_current->type) {
+      case TOKEN_FUN:
+      case TOKEN_VAR:
+      case TOKEN_FOR:
+      case TOKEN_IF:
+      case TOKEN_WHILE:
+      case TOKEN_PRINT:
+      case TOKEN_RETURN:
+        return;
+
+      default:
+        // Do nothing.
+        ;
+    }
+
+    advance();
+  }
+}
+
 static void declaration()
 {
-   statement();
+   if (match(TOKEN_VAR))
+   {
+      varDeclaration();
+   }
+   else
+   {
+      statement();
+   }
+
+   if (parser_panicMode) synchronize();
 }
 
 static void statement()
@@ -474,6 +589,10 @@ static void statement()
    if (match(TOKEN_PRINT))
    {
       printStatement();
+   }
+   else
+   {
+      expressionStatement();
    }
 }
 
@@ -486,11 +605,16 @@ void lineDebugger()
    gets(debugLineIn);
 }
 
+
 bool compile(uint8_t sourceBank, uint8_t tokenBank, Chunk* chunk)
 {
    scanAll(sourceBank, tokenBank);     // in scanner.c
 
-   initPrattTable();
+   if (initialized == 0)
+   {
+      initPrattTable();
+      initialized = 1;
+   }
 
    compilingChunk = chunk;
  

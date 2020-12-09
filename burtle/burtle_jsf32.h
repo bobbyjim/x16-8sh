@@ -20,31 +20,23 @@
 
 */
 
-#ifndef _hash_h
-#define _hash_h
+#ifndef bcpm_rand_h
+#define bcpm_rand_h
 
-#include "common.h"
-#include "value.h"
+typedef unsigned long int  u4;
+typedef struct ranctx 
+{ 
+   u4 a; 
+   u4 b;  
+   u4 c; 
+   u4 d; 
+   int initialized;
+} ranctx;
 
-typedef struct {
-  ObjString* key;
-  Value value;
-} Entry;
-
-typedef struct {
-   uint8_t count;
-   uint8_t capacity;
-   Entry* entries;
-} Hash;
-
-
-void initHash(Hash* hash);
-void freeHash(Hash* hash);
-bool hashGet(Hash* table, ObjString* key, Value* value);
-bool hashSet(Hash* table, ObjString* key, Value* value);
-bool hashDelete(Hash* table, ObjString* key);
-void hashAddAll(Hash* from, Hash* to);
-ObjString* hashFindString(Hash* table, const char* chars, int length, uint32_t hash);
-void hashDump(Hash* hash);
+#define randrot(x,k) (((x)<<(k))|((x)>>(32-(k))))
+u4 ranval( ranctx *x );
+void raninit( ranctx *x, u4 seed );
+void burtle_srand(u4 seed);
+int burtle_random();
 
 #endif

@@ -5,14 +5,8 @@
 
 #include "list.h"
 
-typedef struct {
-   char* key;
-   char* val;
-} ENTRY;
-
 int freelist = 256;
 ENTRY list[256];
-
 
 int findEntry(char* key)
 {
@@ -27,7 +21,7 @@ int findEntry(char* key)
    return -1;
 }
 
-char* dynamicGetValue(char* key)
+VALUE* dynamicGetValue(char* key)
 {
    int i = -1;
    i = findEntry(key);
@@ -86,7 +80,7 @@ int findFree()
 }
 
 
-int putEntry(char* key, char* val)
+int putEntry(char* key, VALUE* val)
 {
    int i;
 
@@ -98,9 +92,9 @@ int putEntry(char* key, char* val)
    if (i > -1) // found a spot
    {
       list[i].key = realloc(list[i].key, strlen(key)+1);
-      list[i].val = realloc(list[i].val, strlen(val)+1);
+      list[i].val->sval = realloc(list[i].val->sval, strlen(val->sval)+1);
       strcpy(list[i].key, key);
-      strcpy(list[i].val, val); 
+      strcpy(list[i].val->sval, val->sval); 
       --freelist;
       return i;
    }

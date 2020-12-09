@@ -1,8 +1,30 @@
+/*
+  
+    8SH: a command interpreter for 8 bit 'retro' systems.
+    Copyright (C) 2020 Robert Eaglestone
+
+    This file is part of 8SH.
+
+    8SH is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    8SH is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with 8SH.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
 
 #include <stdio.h>
 #include <string.h>
 #include <cbm.h>
 #include <peekpoke.h>
+#include <time.h>
 
 #include "common.h"
 #include "compiler.h"
@@ -44,6 +66,7 @@ static void runtimeError(const char* format, ...)
 void initVM() {
    resetStack();
    vm.objects = NULL;
+   initHash(&vm.globals);
    initHash(&vm.internedStrings);
 
    // set some constants
@@ -54,6 +77,8 @@ void initVM() {
 }
 
 void freeVM() {
+   puts("free-vm()\n");
+   freeHash(&vm.globals);
    freeHash(&vm.internedStrings);
    freeObjects();
 }
@@ -96,10 +121,9 @@ static void concatenate() {
 
   result = takeString(chars, length);
 
+  //push(OBJ_VAL(result));
   obj.type = VAL_OBJ;
   obj.as.obj = (Obj*) result;
-  
-  //push(OBJ_VAL(result));
   push(&obj);
 }
 
@@ -113,6 +137,7 @@ static void concatenate() {
 static InterpretResult run() {
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (&(vm.chunk->constants.values[READ_BYTE()]))
+#define READ_STRING()   AS_STRING(*READ_CONSTANT())
 
 #define LOGICAL_OP(op) \
     do { \
@@ -161,6 +186,40 @@ static InterpretResult run() {
       case OP_TRUE: 	push(&TRUE_OBJ); break;
       case OP_FALSE:	push(&FALSE_OBJ); break;
 
+      case OP_POP:      pop(); break;
+
+      case OP_GETTIME:
+      {
+        Value timeVal;
+        time_t t;
+        time(&t);
+        timeVal.type = VAL_NUMBER;
+        timeVal.as.number = t;
+        push(&timeVal);
+        break;
+      }
+
+      case OP_GET_GLOBAL:
+      {
+         ObjString* name = READ_STRING();
+         Value* value;
+         if (!hashGet(&vm.globals, name, value)) {
+            runtimeError("undefined variable '%s'.", name->chars);
+            return INTERPRET_RUNTIME_ERROR;
+         }
+         push(value);
+         break;
+      }
+
+      case OP_DEFINE_GLOBAL: 
+      {
+	 ObjString* name = READ_STRING();
+	 hashSet(&vm.globals, name, peek(0));
+         pop();
+         hashDump(&vm.globals);
+         break;
+      }
+
       case OP_EQUAL:    
       {
          Value* b = pop();
@@ -177,6 +236,7 @@ static InterpretResult run() {
       case OP_SUBTRACT: BINARY_OP(-); break;
       case OP_MULTIPLY: BINARY_OP(*); break;
       case OP_DIVIDE:   BINARY_OP(/); break;
+      case OP_MODULO:   BINARY_OP(%); break;
 
       case OP_NOT:
       {
@@ -195,16 +255,15 @@ static InterpretResult run() {
 	 break;
       }
 
+/*
       case OP_MODULO: 
       {
          Value* b = pop();
          Value* a = top();
-         int bb = b->as.number;
-         int aa = a->as.number;
-         //while(aa >= bb) aa -= bb;
-         a->as.number = aa % bb;
+         a->as.number = a->as.number % b->as.number;
          break;
       }
+*/
 
       case OP_CAT:
       {
@@ -236,6 +295,7 @@ static InterpretResult run() {
 
 #undef READ_BYTE
 #undef READ_CONSTANT
+#undef READ_STRING
 #undef BINARY_OP(op)
 #undef LOGICAL_OP(op)
 }
@@ -245,6 +305,10 @@ InterpretResult interpretChunk(Chunk* chunk)
   vm.chunk = chunk;
   vm.ip = vm.chunk->code;
   return run();
+}
+
+void initInterpreter()
+{
 }
 
 InterpretResult interpret(uint8_t sourcebank, uint8_t tokenbank)
@@ -267,4 +331,9 @@ InterpretResult interpret(uint8_t sourcebank, uint8_t tokenbank)
    freeChunk(&chunk);
    return result;
 }
+
+void freeInterpreter()
+{
+}
+
 

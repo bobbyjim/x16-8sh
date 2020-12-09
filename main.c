@@ -1,3 +1,25 @@
+/*
+
+    8SH: a command interpreter for 8 bit 'retro' systems.
+    Copyright (C) 2020 Robert Eaglestone
+
+    This file is part of 8SH.
+
+    8SH is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    8SH is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with 8SH.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -13,8 +35,9 @@
 #include "scanner.h"
 #include "bank.h"
 #include "debug.h"
+#include "hash.h"
 
-char mainInputBuffer[256];
+char lineInputBuffer[256];
 
 void repl()
 {
@@ -26,32 +49,39 @@ void repl()
    {
       cputs( "% " );
 
-      if (!fgets(mainInputBuffer, sizeof(mainInputBuffer), stdin)) {
+      if (!fgets(lineInputBuffer, sizeof(lineInputBuffer), stdin)) {
          printf("\n");
          break;
       }
 
-      mainInputBuffer[strlen(mainInputBuffer)-1] = 0; // chop newline
+      lineInputBuffer[strlen(lineInputBuffer)-1] = '\0'; // chop newline
+      printf("[%s]\n", lineInputBuffer);
 
-      if (!strcmp(mainInputBuffer,"exit")) exit(0);
+      if(strlen(lineInputBuffer) > 0)
+      {
+         if (!strcmp(lineInputBuffer,"exit")) exit(0);
+         if (!strcmp(lineInputBuffer,"globals")) 
+         {
+            hashDump(&vm.globals);
+         }
+         else
+         {
+            /******************************************************
 
-      /******************************************************
+             Script is stored in Bank 1.
+             That means the maximum script size is 8K.
+             I don't think that's a problem.  
 
-       I've had a lot of input buffer pointers blow up on me;
-       it SEEMS as though memory is real easy to corrupt.
-       THEREFORE, it SEEMS that one way to avoid this problem
-       is to store the "script" in Bank 1.
-
-       Yeah that means the maximum script size is 8K.
-       I don't think that's a problem.  
-
-      ******************************************************/
+            ******************************************************/
       
-      setBank(sourcebank);
-      bankputs(mainInputBuffer, strlen(mainInputBuffer), 0);
+            setBank(sourcebank);
+            bankputs(lineInputBuffer, strlen(lineInputBuffer), 0);
 
-      //scanAll(sourcebank, tokenbank);
-      interpret(sourcebank, tokenbank); // in vm.c
+            interpret(sourcebank, tokenbank); // in vm.c
+
+
+         }
+      }
    }
 }
 
@@ -60,29 +90,10 @@ void main()
    cbm_k_bsout(0x8E); // revert to primary case
 
    puts("\n");
-   puts("***************************************");
-   puts("*                                     *");   
-   puts("*   8sh for x16 : v0.1 : 2020-11-27   *");   
-   puts("*                                     *");   
-   puts("***************************************");   
-   puts("*                                     *");   
-   puts("*   values supported:                 *");   
-   puts("*                                     *");   
-   puts("*   int constants, true, false, nil   *");   
-   puts("*                                     *");   
-   puts("*                                     *");   
-   puts("*   ops supported:                    *");   
-   puts("*                                     *");   
-   puts("*   + - * / ()                        *");   
-   puts("*   > >= == <= < !                    *");   
-   puts("*                                     *");   
-   puts("*                                     *");   
-   puts("*   input is stored in bank 1         *");   
-   puts("*   tokens are in bank 2              *");   
-   puts("*                                     *");   
-   puts("*   type 'exit' to exit               *");   
-   puts("*                                     *");   
-   puts("***************************************");
+   puts("8sh for x16 (2020.12.01)"); // copyright (c) 2020 robert eaglestone\n");
+   //puts("  this program comes with absolutely no warranty.");
+   //puts("  this is free software, and you are welcome to redistribute it");
+   //puts("  under certain conditions; consult 'copying' for details.");
    puts("\n");
 
    initVM();

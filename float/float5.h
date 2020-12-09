@@ -20,31 +20,17 @@
 
 */
 
-#ifndef _hash_h
-#define _hash_h
-
-#include "common.h"
-#include "value.h"
+#ifndef _float5_h
+#define _float5_h
 
 typedef struct {
-  ObjString* key;
-  Value value;
-} Entry;
+   int  exponent;
+   long mantissa;
+} Float5;
 
-typedef struct {
-   uint8_t count;
-   uint8_t capacity;
-   Entry* entries;
-} Hash;
-
-
-void initHash(Hash* hash);
-void freeHash(Hash* hash);
-bool hashGet(Hash* table, ObjString* key, Value* value);
-bool hashSet(Hash* table, ObjString* key, Value* value);
-bool hashDelete(Hash* table, ObjString* key);
-void hashAddAll(Hash* from, Hash* to);
-ObjString* hashFindString(Hash* table, const char* chars, int length, uint32_t hash);
-void hashDump(Hash* hash);
+void add(Float5* a, Float5* b);
+void mul(Float5* a, Float5* b);
+void invert(Float5* a);
 
 #endif
+

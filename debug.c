@@ -1,3 +1,24 @@
+/*
+  
+    8SH: a command interpreter for 8 bit 'retro' systems.
+    Copyright (C) 2020 Robert Eaglestone
+
+    This file is part of 8SH.
+
+    8SH is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    8SH is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with 8SH.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
 
 #include <stdio.h>
 
@@ -100,6 +121,9 @@ int disassembleInstruction(Chunk* chunk, int offset) {
     case OP_NIL:  	return simpleInstruction("op_nil", offset);
     case OP_TRUE: 	return simpleInstruction("op_true", offset);
     case OP_FALSE: 	return simpleInstruction("op_false", offset);
+    case OP_POP:        return simpleInstruction("op_pop", offset);
+    case OP_GET_GLOBAL: return constantInstruction("op_get_global", chunk, offset);
+    case OP_DEFINE_GLOBAL: return constantInstruction("op_define_global", chunk, offset);
     case OP_EQUAL: 	return simpleInstruction("op_equal", offset);
     case OP_GREATER: 	return simpleInstruction("op_greater", offset);
     case OP_LESS: 	return simpleInstruction("op_less", offset);
@@ -114,6 +138,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
     case OP_NOT:        return simpleInstruction("op_not", offset);
     case OP_NEGATE: 	return simpleInstruction("op_negate", offset);
 
+    case OP_GETTIME:    return simpleInstruction("op_time", offset);
     case OP_CAT:	return simpleInstruction("op_catenate", offset);
     case OP_PRINT:      return simpleInstruction("op_print", offset);
     case OP_RETURN: 	return simpleInstruction("op_return", offset);
@@ -168,7 +193,8 @@ char* debugToken(TokenType type)
       case TOKEN_IDENTIFIER    : name = "identifier";  break;
       case TOKEN_STRING        : name = "string";      break;
       case TOKEN_NUMBER        : name = "number";      break;
-//    case TOKEN_VARIABLE      : name = "variable";    break;
+      case TOKEN_VAR           : name = "var decl";    break;
+      case TOKEN_GETTIME       : name = "time";        break;
 
       case TOKEN_AND           : name = "and";  break;
       case TOKEN_OR            : name = "or";  break;
@@ -177,7 +203,7 @@ char* debugToken(TokenType type)
       case TOKEN_FOR           : name = "for";  break;
       case TOKEN_IF            : name = "if";  break;
       case TOKEN_RETURN        : name = "return";  break;
-      case TOKEN_SUB           : name = "sub";  break;
+      case TOKEN_FUN           : name = "sub";  break;
       case TOKEN_WHILE         : name = "while";  break;
 
       case TOKEN_EOF           : name = "eof";  break;
@@ -188,6 +214,7 @@ char* debugToken(TokenType type)
       case TOKEN_ERROR_TOO_MANY_CONSTANTS   : name = "error: too many constants"; break;
       case TOKEN_ERROR_EXPRESSION_EXPECTED  : name = "error: expression expected"; break;
       case TOKEN_ERROR_SEMICOLON_EXPECTED   : name = "error: ';' expected"; break;
+      case TOKEN_ERROR_EXPECT_VARIABLE_NAME : name = "expect variable name."; break;
 
       case TOKEN_ERROR_HALT_CATCH_FIRE      : name = "error: halt and catch fire"; break;
 

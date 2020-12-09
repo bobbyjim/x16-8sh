@@ -1,3 +1,25 @@
+/*
+  
+    8SH: a command interpreter for 8 bit 'retro' systems.
+    Copyright (C) 2020 Robert Eaglestone
+
+    This file is part of 8SH.
+
+    8SH is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    8SH is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with 8SH.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
 #ifndef clox_chunk_h
 #define clox_chunk_h
 
@@ -29,6 +51,11 @@ typedef enum {
   OP_PUT,
   OP_PUSH,
   OP_POP,
+  OP_GET_GLOBAL,
+  OP_DEFINE_GLOBAL,
+
+  OP_GETTIME,
+
   OP_RM,
   OP_PRINT,
   OP_JUMP,
@@ -60,7 +87,7 @@ typedef struct {
 void initChunk(Chunk* chunk);
 void freeChunk(Chunk* chunk);
 void writeChunk(Chunk* chunk, uint8_t byte, uint8_t line);
-int addConstant(Chunk* chunk, Value* value);
+uint8_t addConstant(Chunk* chunk, Value* value);
 
 
 //
