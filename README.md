@@ -53,8 +53,10 @@ metadata is 6 bytes long, and points back to the source text
 in Bank 1 as needed.
 
 # STATUS
-* (15.5k) Expressions.
-* (16.8k) Comparison ops. 
-* (18k) Strings. 11/28/2020.
+* Initial commit. 11/11/2020.
+* RAM bank access. 11/17/2020.
+* (15.5k) Expressions. 11/23/2020.
+* (16.8k) Comparison ops. 11/27/2020.
+* (18k) Strings. 11/29/2020.
 * (20k) PRINT statement. 12/1/2020.
 
