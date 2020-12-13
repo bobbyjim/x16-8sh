@@ -177,9 +177,9 @@ static TokenType identifierType()
 { 
    switch (beek(scanner_start_position)) {
 //    case 'a': 
-//    case 'b': 
+      case 'b': return checkKeyword(1, 4, "lock",  TOKEN_BLOCK);
 //    case 'c': 
-      case 'd': return checkKeyword(1, 3, "one",   TOKEN_ENDBLOCK); // done
+      case 'd': return checkKeyword(1, 3, "one",   TOKEN_ENDBLOCK); // "done"
       case 'e': 
 	if (checkKeyword(1, 3, "lse",   TOKEN_ELSE) == TOKEN_ELSE)
 	   return TOKEN_ELSE;
@@ -198,13 +198,13 @@ static TokenType identifierType()
 //    case 'k':
       case 'l': return checkRelatedKeywords(1, 2, "te", TOKEN_S_LTE, TOKEN_S_LT);
       
-//    case 'm': return checkKeyword(1, 2, "od",    TOKEN_MOD);
+//    case 'm': 
       case 'n': 
 	if (checkKeyword(1, 2, "il",    TOKEN_NIL) == TOKEN_NIL)
 	   return TOKEN_NIL;
 	return checkKeyword(1, 1, "e", TOKEN_S_NE);
 
-//    case 'o': 
+      case 'o': return checkKeyword(1, 1, "f",     TOKEN_OF);
 //    case 'p':
 //    case 'q':
       case 'r': return checkKeyword(1, 5, "eturn", TOKEN_RETURN);
@@ -214,12 +214,12 @@ static TokenType identifierType()
 	   return TOKEN_TRUE;
 	return checkKeyword(1, 3, "ime", TOKEN_GETTIME);
 
-//    case 'u':
+      case 'u': return checkKeyword(1, 4, "ntil",  TOKEN_UNTIL);
       case 'v': return checkKeyword(1, 2, "ar",    TOKEN_VAR);
       case 'w': return checkKeyword(1, 4, "hile",  TOKEN_WHILE);
 //    case 'x': 
-//    case 'y':
-//    case 'z':
+//    case 'y': 
+//    case 'z': 
   }
   return TOKEN_IDENTIFIER;
 }
@@ -331,6 +331,7 @@ TokenType scanToken()
       case '?': return makeToken(TOKEN_PRINT);
       case '^': return makeToken(TOKEN_UP);
       case '%': return makeToken(TOKEN_MOD);
+      case PETSCII_LEFT_ARROW: return makeToken(TOKEN_EQUAL);
 
 
       // potential two-char tokens
@@ -340,17 +341,23 @@ TokenType scanToken()
       case '>': return makeToken(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
       case '-': return makeToken(match('=') ? TOKEN_MINUS_EQUAL : TOKEN_MINUS );
       case '+': return makeToken(match('=') ? TOKEN_PLUS_EQUAL  : TOKEN_PLUS);
-      case '*': return makeToken(match('=') ? TOKEN_STAR_EQUAL  : TOKEN_STAR );
+      case '*': return makeToken(match('=') ? TOKEN_STAR_EQUAL : TOKEN_STAR);
+
       case '/': return makeToken(match('=') ? TOKEN_SLASH_EQUAL : TOKEN_SLASH );
 
-      // 221 is PETSCII pipe '|'
-      case 221: return makeToken(match(221) ? TOKEN_OR     : TOKEN_PIPE  );
+      case PETSCII_PIPE: return makeToken(match(PETSCII_PIPE) ? TOKEN_OR     : TOKEN_PIPE  );
       case '&': return makeToken(match('&') ? TOKEN_AND    : TOKEN_AMP   );
       case '.': return makeToken(match('.') ? TOKEN_DOTDOT : TOKEN_DOT   );
 
       // strings
       case '"': return string();
       case '\'': return string();
+
+      // registers
+      case PETSCII_SPADE:	return makeToken( TOKEN_REGISTER );
+      case PETSCII_HEART:	return makeToken( TOKEN_REGISTER );
+      case PETSCII_CLUB:	return makeToken( TOKEN_REGISTER );
+      case PETSCII_DIAMOND:	return makeToken( TOKEN_REGISTER );
 
       // variables
       case '$': 

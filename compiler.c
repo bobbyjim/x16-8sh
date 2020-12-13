@@ -277,6 +277,7 @@ static void binary() {
     case TOKEN_PLUS:          emitByte(OP_ADD); break;
     case TOKEN_MINUS:         emitByte(OP_SUBTRACT); break;
     case TOKEN_STAR:          emitByte(OP_MULTIPLY); break;
+    case TOKEN_UP:            emitByte(OP_POW); break;
     case TOKEN_SLASH:         emitByte(OP_DIVIDE); break;
     case TOKEN_MOD:           emitByte(OP_MODULO); break;
 
@@ -390,6 +391,7 @@ void initPrattTable()
    ParseRule(TOKEN_SLASH        ,NULL,    binary,PREC_FACTOR);
    ParseRule(TOKEN_MOD          ,NULL,    binary,PREC_FACTOR); 
    ParseRule(TOKEN_STAR         ,NULL,    binary,PREC_FACTOR);
+   ParseRule(TOKEN_UP           ,NULL,    binary,PREC_FACTOR);
    ParseRule(TOKEN_BANG         ,unary,   NULL,  PREC_NONE);
    ParseRule(TOKEN_BANG_EQUAL   ,NULL,    binary,  PREC_EQUALITY);
    ParseRule(TOKEN_EQUAL        ,NULL,    NULL,  PREC_NONE);

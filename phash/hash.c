@@ -1,4 +1,5 @@
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
@@ -20,19 +21,26 @@ HASH* hnew()
    return tb;
 }
 
-STR* hfetch(HASH* tb, char* key)
+uint16_t calcHash(char* key)
 {
    char* s;
+   uint16_t hash;
    int i;
-   int hash;
-   HENT* entry;
- 
-   if (!tb) return Nullstr;
    for (s=key,	i=0,	hash=0;
      /* while */ *s && i < COEFFSIZE;
 	++s,	++i,	hash *= 5) {
       hash += *s * coeff[i];
    }
+   return hash;
+}
+
+STR* hfetch(HASH* tb, char* key)
+{
+   uint16_t hash;
+   HENT* entry;
+ 
+   if (!tb) return Nullstr;
+   hash = calcHash(key);
    entry = tb->tbl_array[hash & tb->tbl_max];
    for(; entry; entry = entry->hent_next) {
       if (entry->hent_hash != hash) // strings cannot be equal
@@ -55,11 +63,11 @@ void hsplit(HASH* tb)
     HENT **oentry;
 
     a = (HENT**) realloc((char*)tb->tbl_array, newsize * sizeof(HENT*));
-    bzero((char*)&a[oldsize], oldsize * sizeof(HENT*)); /* zero second half */
+    bzero((char*)&a[oldsize], (newsize - oldsize) * sizeof(HENT*)); /* zero second half */
     tb->tbl_max = --newsize;
     tb->tbl_array = a;
 
-    for (i=0; i<oldsize; i++,a++) {
+    for (i=0; i<oldsize; ++i,++a) {
         if (!*a)                                /* non-existent */
             continue;
         b = a+oldsize;
@@ -82,22 +90,16 @@ void hsplit(HASH* tb)
 
 bool hstore(HASH* tb, char* key, STR* val)
 {
-   char* s;
    int i;
-   int hash;
+   uint16_t hash;
    HENT* entry;
    HENT** oentry;
 
    if (!tb) return false;
-   for (s=key,	i=0,	hash=0;
-     /* while */ *s && i < COEFFSIZE;
-	++s,	++i,	hash *= 5) {
-	hash += *s * coeff[i];
-   }
-
+   hash = calcHash(key);
    oentry = &(tb->tbl_array[hash & tb->tbl_max]);
    i = 1;
-    for (entry = *oentry; entry; i=0, entry = entry->hent_next) {
+   for (entry = *oentry; entry; i=0, entry = entry->hent_next) {
         if (entry->hent_hash != hash)           /* strings can't be equal */
             continue;
         if (strcmp(entry->hent_key,key)) /* is this it? */

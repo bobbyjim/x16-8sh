@@ -1,6 +1,6 @@
-SOURCES = main.c str.c util.c hash.c
+SOURCES = main.c hash.c object.c memory.c value.c debug.c chunk.c
 
-PROGRAM = PHASH8
+PROGRAM = LHASH8
 
 CC65_TARGET = cx16
 

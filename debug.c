@@ -134,6 +134,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
     case OP_MULTIPLY: 	return simpleInstruction("op_multiply", offset);
     case OP_DIVIDE: 	return simpleInstruction("op_divide", offset);
     case OP_MODULO: 	return simpleInstruction("op_modulo", offset);
+    case OP_POW:        return simpleInstruction("op_pow", offset);
 
     case OP_NOT:        return simpleInstruction("op_not", offset);
     case OP_NEGATE: 	return simpleInstruction("op_negate", offset);
@@ -162,7 +163,7 @@ char* debugToken(TokenType type)
 
       case TOKEN_MINUS         : name = "minus";      break;
       case TOKEN_PLUS          : name = "plus" ;      break;
-//    case TOKEN_POW           : name = "pow"  ;      break;
+      case TOKEN_UP            : name = "pow"  ;      break;
       case TOKEN_SLASH         : name = "slash";      break;
       case TOKEN_STAR          : name = "star";       break;
 //    case TOKEN_XOR           : name = "xor";        break; 

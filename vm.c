@@ -237,6 +237,15 @@ static InterpretResult run() {
       case OP_MULTIPLY: BINARY_OP(*); break;
       case OP_DIVIDE:   BINARY_OP(/); break;
       case OP_MODULO:   BINARY_OP(%); break;
+      case OP_POW:      
+      {
+         Value* b = pop();
+         Value* a = top();
+         long   n = b->as.number;
+         long   m = a->as.number;
+         while(--n>0) a->as.number *= m;
+         break;
+      }
 
       case OP_NOT:
       {

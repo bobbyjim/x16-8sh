@@ -1,18 +1,11 @@
 
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "util.h"
 #include "str.h"
 
-/*
-STR* str_static();
-STR* str_make();
-STR* str_nmake();
-*/
-
-STR* str_new(uint8_t len)
+STR* str_new(int len)
 {
    STR* str = (STR *) malloc(sizeof(STR));
    bzero((char*)str, sizeof(STR));
@@ -21,7 +14,7 @@ STR* str_new(uint8_t len)
    return str;
 }
 
-void str_grow(STR* str, uint8_t len)
+void str_grow(STR* str, int len)
 {
    if (len && str)
       GROWSTR(&(str->str_ptr), &(str->str_len), len + 1);
@@ -29,7 +22,7 @@ void str_grow(STR* str, uint8_t len)
 
 void str_set(STR* str, char* ptr)
 {
-   uint8_t len;
+   int len;
    if (!ptr) ptr = "";
    len = strlen(ptr);
    GROWSTR(&(str->str_ptr), &(str->str_len), len + 1);
@@ -44,5 +37,4 @@ STR* str_make(char* s)
    str_set(str, s);
    return str;
 }
-
 

@@ -14,9 +14,12 @@ typedef struct string STR;
 #define Nullstr Null(STR*)
 #define GROWSTR(pp,lp,len) if (*(lp) < (len)) growstr(pp,lp,len)
 
-STR* str_static();
-STR* str_make();
-STR* str_nmake();
+STR* str_new(int len);
+//STR* str_static();
+STR* str_make(char* s);
+//STR* str_nmake();
+void str_grow(STR* str, int len);
+void str_set(STR* str, char* ptr);
 void growstr(char** strptr, int* curlen, int newlen);
 
 #endif

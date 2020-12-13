@@ -54,7 +54,7 @@ in Bank 1 as needed.
 
 # STATUS
 * Initial commit. 11/11/2020.
-* RAM bank access. 11/17/2020.
+* (8k) RAM bank access. 11/17/2020.
 * (15.5k) Expressions. 11/23/2020.
 * (16.8k) Comparison ops. 11/27/2020.
 * (18k) Strings. 11/29/2020.

@@ -1,6 +1,7 @@
 #ifndef _hash_h
 #define _hash_h
 
+#include <stdint.h>
 #include <stdbool.h>
 
 #include "str.h"
@@ -14,28 +15,31 @@ struct hentry {
    HENT* hent_next;
    char* hent_key;
    STR*  hent_val;
-   int   hent_hash;
+   uint16_t hent_hash;
 };
 
 struct htbl {
    HENT** tbl_array;
    int    tbl_max;
    int    tbl_fill;
-   int    tbl_riter;  // current root of iterator
-   HENT*  tbl_either; // current entry of iterator
+//   int    tbl_riter;  // current root of iterator
+//   HENT*  tbl_either; // current entry of iterator
 };
 
-STR* hfetch();
-bool hstore();
-STR* hdelete();
 HASH* hnew();
-void hclear();
-void hfree();
-void hentfree();
-int hiterinit();
+STR*  hfetch(HASH* tb, char* key);
+void  hsplit(HASH* tb);
+bool  hstore(HASH* tb, char* key, STR* val);
+/*
+STR*  hdelete();
+void  hclear();
+void  hfree();
+void  hentfree();
+int   hiterinit();
 HENT* hiternext();
 char* hiterkey();
-STR* hiterval();
+STR*  hiterval();
+*/
 
 #define COEFFSIZE (16 * 8)      /* size of array below */
 static char coeff[] = {
