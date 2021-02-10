@@ -30,7 +30,7 @@
 
 void testVM();
 
-char* debugToken(TokenType type);
+char* debugToken(uint8_t type);
 char* debugPrecedence(uint8_t p);
 
 void disassembleChunk(Chunk* chunk, const char* name);

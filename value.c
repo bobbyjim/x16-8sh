@@ -22,10 +22,13 @@
 
 #include <conio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "object.h"
 #include "memory.h"
 #include "value.h"
+
+Value* nilValue; // a singleton
 
 void initValueArray(ValueArray* array) {
    array->values = NULL;
@@ -43,6 +46,7 @@ void writeValueArray(ValueArray* array, Value* value) {
 
   array->values[array->count] = *value;
   array->count++;
+//  printf("write-value-array count=%d\n", array->count);
 }
 
 void freeValueArray(ValueArray* array) {
@@ -87,6 +91,16 @@ void setBool(Value* val)
    val->type = VAL_BOOL;
 }
 
+Value* getNil()
+{
+   if (nilValue == NULL)
+   {
+      nilValue = (Value*) malloc(sizeof(Value));
+      setNil(nilValue);
+   }
+   return nilValue;
+}
+
 void setNil(Value* val)
 {
    val->type = VAL_NIL;
@@ -104,9 +118,9 @@ void setObject(Value *obj)
 
 Value* objVal(Obj* object)
 {
-   Value val;
-   val.type = VAL_OBJ;
-   val.as.obj = object; 
-   return &val;
+   Value* val = (Value*) malloc(sizeof(Value));
+   val->type = VAL_OBJ;
+   val->as.obj = object; 
+   return val;
 }
 

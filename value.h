@@ -63,6 +63,7 @@ typedef struct {
 #define AS_NUMBER(value)	((value).as.number)
 #define AS_OBJ(value)		((value).as.obj)
 
+Value* getNil();
 Value* objVal(Obj* object);
 
 void setBool(Value* val);
@@ -84,6 +85,7 @@ void initValueArray(ValueArray* array);
 void writeValueArray(ValueArray* array, Value* value);
 void freeValueArray(ValueArray* array);
 void printValue(Value* value);
+
 
 
 #endif

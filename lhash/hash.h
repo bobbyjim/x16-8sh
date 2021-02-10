@@ -39,6 +39,7 @@ typedef struct {
 
 void initHash(Hash* hash);
 void freeHash(Hash* hash);
+void adjustCapacity(Hash* table, int capacity);
 bool hashGet(Hash* table, ObjString* key, Value* value);
 bool hashSet(Hash* table, ObjString* key, Value* value);
 bool hashDelete(Hash* table, ObjString* key);

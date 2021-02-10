@@ -1,4 +1,4 @@
-SOURCES = main.c hash.c object.c memory.c value.c debug.c chunk.c
+SOURCES = main.c hash.c object.c value.c 
 
 PROGRAM = LHASH8
 

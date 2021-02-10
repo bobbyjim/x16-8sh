@@ -54,12 +54,6 @@ static int isAlnumdot(char c) {
    return isalnum(c) || c == '.' || c == 164; // 164 is PETSCII '_'
 }
 
-/*
-static int isDot(char c) {
-   return c == '.';
-}
-*/
-
 static int isAtEnd() {
    return beek(scanner_current_position) == '\0';
 }
@@ -77,6 +71,18 @@ static bool match(char expected) {
   return true;
 }
 
+static char matchNotAlnum() {
+  char c;
+
+  if (isAtEnd()) return 0;
+
+  c = beek(scanner_current_position);
+  if (isalnum(c)) return 0;
+   
+  ++scanner_current_position;
+  return c;
+}
+
 static void skipWhitespace() 
 {
   char c;
@@ -86,7 +92,7 @@ static void skipWhitespace()
       case ' ':
       case '\r':
       case '\t':
-      case 160 :  // this is some strange PETSCII space
+      case 160 :  // this is a strange PETSCII space
         advance();
         break;
 
@@ -118,37 +124,34 @@ static void skipWhitespace()
  		Token builders
 
 *************************************************************/
-//static Token* makeToken(TokenType type) {
-TokenType makeToken(TokenType type) {
-  //Token token;
+TokenType makeToken(TokenType type)
+{
   token_type = type;
   token_start_position = scanner_start_position;
   token_length = scanner_current_position - scanner_start_position;
   token_line = scanner_line;
-
-  //return &token;
   return token_type; 
 }
 
-//static Token* errorToken(uint8_t errorTokenType) {
-TokenType errorToken(TokenType errorTokenType) {
-  //Token token;
+TokenType errorToken(TokenType errorTokenType)
+{
   token_type = errorTokenType;
   token_start_position = 0;
   token_length = 0;
   token_line = scanner_line;
-
-  //return &token;
   return token_type;
 }
 
-static TokenType checkKeyword(int start, int length,
-    const char* rest, TokenType type) {
-  if (scanner_current_position - scanner_start_position == start + length &&
-      memcmpBank(scanner_start_position+start,rest,length) == 0) {
+static TokenType checkKeyword(
+		int start, 
+		int length,
+    		const char* rest, 
+		TokenType type)
+{
+  if (scanner_current_position - scanner_start_position == start + length 
+   && memcmpBank(scanner_start_position+start,rest,length) == 0) {
     return type;
   }
-
   return TOKEN_IDENTIFIER;
 }
 
@@ -172,13 +175,25 @@ static TokenType checkRelatedKeywords(
   return TOKEN_IDENTIFIER;
 }
 
+TokenType string(char terminator) {
+  while (beek(scanner_current_position) != terminator && !isAtEnd()) {
+    if (beek(scanner_current_position) == '\n') ++scanner_line;
+    advance();
+  }
+
+  if (isAtEnd()) /*return*/ errorToken(TOKEN_ERROR_UNTERMINATED_STRING);
+
+  // The closing quote.
+  advance();
+  return makeToken(TOKEN_STRING);
+}
 
 static TokenType identifierType()
 { 
-   switch (beek(scanner_start_position)) {
-//    case 'a': 
-      case 'b': return checkKeyword(1, 4, "lock",  TOKEN_BLOCK);
-//    case 'c': 
+   char c;
+   switch (beek(scanner_start_position)) 
+   {
+      case 'b': return checkKeyword(1, 4, "reak",  TOKEN_BREAK);
       case 'd': return checkKeyword(1, 3, "one",   TOKEN_ENDBLOCK); // "done"
       case 'e': 
 	if (checkKeyword(1, 3, "lse",   TOKEN_ELSE) == TOKEN_ELSE)
@@ -191,22 +206,22 @@ static TokenType identifierType()
         return checkKeyword(1, 4, "alse",  TOKEN_FALSE);
 	
       case 'g': return checkRelatedKeywords(1, 2, "te", TOKEN_S_GTE, TOKEN_S_GT);
-      
-//    case 'h': 
       case 'i': return checkKeyword(1, 1, "f",     TOKEN_IF);
-//    case 'j':
-//    case 'k':
       case 'l': return checkRelatedKeywords(1, 2, "te", TOKEN_S_LTE, TOKEN_S_LT);
       
-//    case 'm': 
       case 'n': 
 	if (checkKeyword(1, 2, "il",    TOKEN_NIL) == TOKEN_NIL)
 	   return TOKEN_NIL;
 	return checkKeyword(1, 1, "e", TOKEN_S_NE);
 
       case 'o': return checkKeyword(1, 1, "f",     TOKEN_OF);
-//    case 'p':
-//    case 'q':
+
+      case 'q': c = matchNotAlnum();
+            if (c != 0)
+	       return string(c);
+	    else
+	       return TOKEN_IDENTIFIER;
+
       case 'r': return checkKeyword(1, 5, "eturn", TOKEN_RETURN);
       case 's': return checkKeyword(1, 2, "ub",    TOKEN_FUN);
       case 't': 
@@ -217,9 +232,6 @@ static TokenType identifierType()
       case 'u': return checkKeyword(1, 4, "ntil",  TOKEN_UNTIL);
       case 'v': return checkKeyword(1, 2, "ar",    TOKEN_VAR);
       case 'w': return checkKeyword(1, 4, "hile",  TOKEN_WHILE);
-//    case 'x': 
-//    case 'y': 
-//    case 'z': 
   }
   return TOKEN_IDENTIFIER;
 }
@@ -247,7 +259,6 @@ TokenType arraySize() {
 }
 
 
-//static Token* number() {
 TokenType number() {
   while (isdigit(beek(scanner_current_position))) advance();
 
@@ -261,22 +272,6 @@ TokenType number() {
 
   return makeToken(TOKEN_NUMBER);
 }
-
-//static Token* string() {
-TokenType string() {
-  while (beek(scanner_current_position) != '"' && !isAtEnd()) {
-    if (beek(scanner_current_position) == '\n') ++scanner_line;
-    advance();
-  }
-
-  if (isAtEnd()) /*return*/ errorToken(TOKEN_ERROR_UNTERMINATED_STRING);
-
-  // The closing quote.
-  advance();
-  return makeToken(TOKEN_STRING);
-}
-
-
 
 /************************************************************
 
@@ -299,7 +294,6 @@ void initScanner(uint8_t sourceBank, uint8_t tokenBank)
    token_line               = 0;
 }
 
-//Token* scanToken()
 TokenType scanToken()
 {
    char c;
@@ -333,25 +327,22 @@ TokenType scanToken()
       case '%': return makeToken(TOKEN_MOD);
       case PETSCII_LEFT_ARROW: return makeToken(TOKEN_EQUAL);
 
+      // strings
+      case '"':  return string('"');
+      case '\'': return string('\'');
 
       // potential two-char tokens
-      case '!': return makeToken(match('=') ? TOKEN_BANG_EQUAL  : TOKEN_BANG);
-      case '=': return makeToken(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
-      case '<': return makeToken(match('=') ? TOKEN_LESS_EQUAL  : TOKEN_LESS);
-      case '>': return makeToken(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
-      case '-': return makeToken(match('=') ? TOKEN_MINUS_EQUAL : TOKEN_MINUS );
-      case '+': return makeToken(match('=') ? TOKEN_PLUS_EQUAL  : TOKEN_PLUS);
-      case '*': return makeToken(match('=') ? TOKEN_STAR_EQUAL : TOKEN_STAR);
-
-      case '/': return makeToken(match('=') ? TOKEN_SLASH_EQUAL : TOKEN_SLASH );
-
-      case PETSCII_PIPE: return makeToken(match(PETSCII_PIPE) ? TOKEN_OR     : TOKEN_PIPE  );
-      case '&': return makeToken(match('&') ? TOKEN_AND    : TOKEN_AMP   );
-      case '.': return makeToken(match('.') ? TOKEN_DOTDOT : TOKEN_DOT   );
-
-      // strings
-      case '"': return string();
-      case '\'': return string();
+      case '!': return makeToken(match('=') ? TOKEN_BANG_EQUAL  	: TOKEN_BANG	);
+      case '=': return makeToken(match('=') ? TOKEN_EQUAL_EQUAL 	: TOKEN_EQUAL	);
+      case '<': return makeToken(match('=') ? TOKEN_LESS_EQUAL  	: TOKEN_LESS	);
+      case '>': return makeToken(match('=') ? TOKEN_GREATER_EQUAL 	: TOKEN_GREATER	);
+      case '-': return makeToken(match('=') ? TOKEN_MINUS_EQUAL 	: TOKEN_MINUS 	);
+      case '+': return makeToken(match('=') ? TOKEN_PLUS_EQUAL  	: TOKEN_PLUS	);
+      case '*': return makeToken(match('=') ? TOKEN_STAR_EQUAL 		: TOKEN_STAR	);
+      case '/': return makeToken(match('=') ? TOKEN_SLASH_EQUAL 	: TOKEN_SLASH 	);
+      case '&': return makeToken(match('&') ? TOKEN_AND    		: TOKEN_AMP   	);
+      case '.': return makeToken(match('.') ? TOKEN_DOTDOT 		: TOKEN_DOT   	);
+      case PETSCII_PIPE: return makeToken(match(PETSCII_PIPE)? TOKEN_OR : TOKEN_PIPE  	);
 
       // registers
       case PETSCII_SPADE:	return makeToken( TOKEN_REGISTER );
@@ -371,7 +362,6 @@ TokenType scanToken()
    return errorToken(TOKEN_ERROR_UNEXPECTED_CHAR);
 }
 
-
 void copyToScannerTempBuffer(uint8_t startPosition, uint8_t length)
 {
    while(--length)
@@ -380,15 +370,12 @@ void copyToScannerTempBuffer(uint8_t startPosition, uint8_t length)
    }
 }
 
-/*
-uint8_t token_bank;                //  Token output bank.
-int     token_rw_head_position;    //  Token r/w position.
+/****************************************************************************
 
-uint8_t token_type;                //  Token workspace.
-uint8_t token_length;              //
-int     token_start_position;      //  0-8192
-int     token_line;                //  Is >256 realistic?
-*/
+     Write the token struct to the target bank and position.
+     The token is 6 bytes long (char* data is stored in the input source).
+
+*****************************************************************************/
 void writeToken()
 {
    setBank(token_bank); // just in case
@@ -408,17 +395,17 @@ void writeToken()
    ++token_count;
 }
 
-
-void scanAll(uint8_t frombank, uint8_t tobank)
+void scan(uint8_t frombank, uint8_t tobank)
 {
    int line = -1;
    initScanner(frombank, tobank);
 
-   for (;;) {
-//      Token* token = scanToken();
+   for (;;) 
+   {
       TokenType type = scanToken();
 
-      if (token_line != line) {
+      if (token_line != line) 
+      {
          printf("%4d ", token_line);
          line = token_line;
       }
@@ -439,5 +426,6 @@ void scanAll(uint8_t frombank, uint8_t tobank)
 
       if (token_type == TOKEN_EOF) break;
    }
+   printf("\n");
 }
 

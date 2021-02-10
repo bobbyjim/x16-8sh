@@ -4,8 +4,8 @@ PROGRAM = 8SH
 
 CC65_TARGET = cx16
 
-CC	= cl65
-CFLAGS 	= --cpu 65c02 -t $(CC65_TARGET) --create-dep $(<:.c=.d) -Ors
+CC	= cl65 
+CFLAGS 	= --cpu 65c02 -t $(CC65_TARGET) --create-dep $(<:.c=.d) -Ors 
 LDFLAGS	= -t $(CC65_TARGET) -m $(PROGRAM).map
 OBJDIR  = .obj
 

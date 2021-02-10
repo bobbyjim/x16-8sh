@@ -52,8 +52,8 @@ struct ObjString {
    uint32_t hash;
 };
 
-static ObjString* allocateString(char* chars, int length, uint32_t hash);
-static uint32_t hashString(const char* key, int length);
+/*static*/ ObjString* allocateString(char* chars, int length, uint32_t hash);
+/*static*/ uint32_t hashString(const char* key, int length);
 
 ObjString* takeString(char* chars, int length);
 //ObjString* copyString(const char* chars, int length);

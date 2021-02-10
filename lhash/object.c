@@ -23,8 +23,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
-#include "memory.h"
 #include "object.h"
 #include "value.h"
 // #include "vm.h"
@@ -39,6 +39,21 @@ Obj* vm_objects;
 Hash vm_internedStrings;
 
 Value nilValue;
+
+
+void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
+  void* result;
+
+  if (newSize == 0) {
+    free(pointer);
+    return NULL;
+  } 
+
+  result = realloc(pointer, newSize);
+  if (result == NULL) exit(1);
+  return result;
+}       
+
 
 static Obj* allocateObject(size_t size, ObjType type) {
   Obj* object = (Obj*)reallocate(NULL, 0, size);

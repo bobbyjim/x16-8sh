@@ -28,25 +28,15 @@
 #define TokenType uint8_t
 
 typedef struct {
-//   const char* start; // not working. why?
    TokenType type;
-   int       start_position; // BANK OFFSET (NOT A POINTER ANY MORE)
    uint8_t   length;
+   int       start_position; // BANK OFFSET (NOT A POINTER ANY MORE)
    int       line;
 } Token;
 
-//void tokenize(char* buffer);
-void initScanner(uint8_t sourceBank, uint8_t tokenBank);
-
-//Token* scanToken();
-TokenType scanToken();
-
-//void scan(Token* intoThisToken);
-char* getInputFrom(uint8_t position);
-
-
-void scanAll(uint8_t frombank, uint8_t tobank);
-
+void 		initScanner(uint8_t sourceBank, uint8_t tokenBank);
+TokenType	scanToken();
+void 		scan(uint8_t frombank, uint8_t tobank);
 
 #define PETSCII_LEFT_ARROW	95
 #define PETSCII_PIPE    	221
@@ -54,9 +44,6 @@ void scanAll(uint8_t frombank, uint8_t tobank);
 #define	PETSCII_HEART		211
 #define PETSCII_DIAMOND		218
 #define PETSCII_CLUB		216
-
-
-#define MAX_TABLE_TOKEN_VALUE   64
 
 #define TOKEN_LEFT_PAREN        1
 #define TOKEN_RIGHT_PAREN       2
@@ -98,7 +85,7 @@ void scanAll(uint8_t frombank, uint8_t tobank);
 #define TOKEN_MINUS_EQUAL       35
 #define TOKEN_PLUS_EQUAL        36
 #define TOKEN_COLON             37
-#define TOKEN_UNUSED11111111111 38
+#define TOKEN_UNTIL		38
 #define TOKEN_PIPE		39
 #define TOKEN_STAR_EQUAL	40
 
@@ -108,7 +95,7 @@ void scanAll(uint8_t frombank, uint8_t tobank);
 #define TOKEN_UP		44
 #define TOKEN_AMP               45
 #define TOKEN_LEFT_ARROW	46
-#define TOKEN_BLOCK             47
+#define TOKEN_BREAK             47
 #define TOKEN_S_NE		48
 #define TOKEN_S_GT		49
 #define TOKEN_S_GTE		50
@@ -125,16 +112,16 @@ void scanAll(uint8_t frombank, uint8_t tobank);
 #define TOKEN_SIZE_OF_VAR	60
 
 #define TOKEN_REGISTER		61
-#define TOKEN_UNTIL		62
+#define TOKEN_UNUSED1111111111	62
 #define TOKEN_UNUSED3333333333	63
 #define TOKEN_UNUSED2222222222	64
 
 // --------------------------------
 
-#define TOKEN_X16		66
-#define TOKEN_EOF               67
+#define TOKEN_EOF               65
 
-#define TOKEN_ERROR_START			224
+#define TOKEN_START_OF_ERRORS			224
+
 #define TOKEN_ERROR_UNTERMINATED_STRING		224
 #define TOKEN_ERROR_UNEXPECTED_CHAR		225
 #define TOKEN_ERROR_EXPECT_END_PAREN            226

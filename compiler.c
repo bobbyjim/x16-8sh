@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "common.h"
 #include "compiler.h"
@@ -35,24 +36,38 @@
 #include "debug.h"
 #endif
 
-#define  PREC_NONE         0
-#define  PREC_ASSIGNMENT   1
-#define  PREC_OR           2
-#define  PREC_AND          3
-#define  PREC_EQUALITY     4
-#define  PREC_COMPARISON   5
-#define  PREC_TERM         6
-#define  PREC_FACTOR       7
-#define  PREC_UNARY        8
-#define  PREC_CALL         9
-#define  PREC_PRIMARY      10
+#define		MAX_TABLE_TOKEN_VALUE		64
 
-#define  EQ(a,b)	!strcmp(a,b)
+#define  	PREC_NONE         0
+#define  	PREC_ASSIGNMENT   1
+#define  	PREC_OR           2
+#define  	PREC_AND          3
+#define  	PREC_EQUALITY     4
+#define  	PREC_COMPARISON   5
+#define  	PREC_TERM         6
+#define  	PREC_FACTOR       7
+#define  	PREC_UNARY        8
+#define  	PREC_CALL         9
+#define  	PREC_PRIMARY      10
+
+#define  	EQ(a,b)		!strcmp(a,b)
 
 uint8_t initialized = 0;
 
 uint8_t compiler_source_bank;
 uint8_t compiler_token_bank;
+
+typedef struct {
+   Token name;
+   int depth;
+} Local;
+
+typedef struct {
+   Local locals[UINT8_COUNT];
+   int localCount;
+   int scopeDepth;
+} Compiler;
+
 
 Token  tmp1, tmp2;
 Token* parser_current;
@@ -131,11 +146,10 @@ static void errorAt(Token* token, uint8_t errorCode) {
 
   if (token->type == TOKEN_EOF) {
     printf(" at end");
-  } else if (token->type >= TOKEN_ERROR_START) {
+  } else if (token->type >= TOKEN_START_OF_ERRORS) {
     // Nothing.
   } else {
 //    fprintf(stderr, " at '%.*s'", token->length, getInputFrom(token->start_position));
-
      //copyToTempBuffer(token->start_position, token->length);
      //printf(" at '%s'", compilerTempBuffer);
  
@@ -185,7 +199,7 @@ static void advance()
       //parser_current = scanToken(); 
       readToken();
 
-      if (parser_current->type < TOKEN_ERROR_START) break;
+      if (parser_current->type < TOKEN_START_OF_ERRORS) break;
 
       errorAtCurrent( parser_current->type );
    }
@@ -230,13 +244,14 @@ static void emitReturn() {
 }
 
 static uint8_t makeConstant(Value* value) {
-  int constant = addConstant(CURRENT_CHUNK, value);
+  uint8_t constant = addConstant(CURRENT_CHUNK, value);
+/*
   if (constant > 255) {
     error(TOKEN_ERROR_TOO_MANY_CONSTANTS); // "too many constants in one chunk.");
     return 0;
   }
-
-  return (uint8_t) constant;
+*/
+  return constant;
 }
 
 static void emitConstant(Value* value) {
@@ -318,19 +333,19 @@ static void number() {
 
 static void string() {
    Obj* str;
-   Value val; // this doesn't feel kosher, but it works
+   Value* val;
    setBank(compiler_source_bank);
 
    str = (Obj*) copyString(parser_previous->start_position + 1,
                            parser_previous->length - 2);
 
    //printf("object type: %d\n", str->type);
-   val = *objVal(str);
-   //printf("value type: %d\n", val.type);
-   //printf("value->obj type: %d\n", val.as.obj->type);
+   val = objVal(str);
+   //printf("value type: %d\n", val->type);
+   //printf("value->obj type: %d\n", val->as.obj->type);
 
-   //printObject(&val);
-   emitConstant(&val);
+   //printObject(val);
+   emitConstant(val);
 }
 
 static void namedVariable(Token* name) {
@@ -446,7 +461,7 @@ static void parsePrecedence(uint8_t precedence)
    //
    //  The prefix rule MUST exist.  Why?
    //
-   if ( parser_previous->type >= TOKEN_ERROR_START )  // take care of all the error tokens
+   if ( parser_previous->type >= TOKEN_START_OF_ERRORS )  // take care of all the error tokens
    {                                                  // (which DO NOT have Pratt entries!)
       return;					      //
    }					              //
@@ -610,7 +625,7 @@ void lineDebugger()
 
 bool compile(uint8_t sourceBank, uint8_t tokenBank, Chunk* chunk)
 {
-   scanAll(sourceBank, tokenBank);     // in scanner.c
+   // scanAll(sourceBank, tokenBank);     // in scanner.c
 
    if (initialized == 0)
    {
@@ -631,11 +646,11 @@ bool compile(uint8_t sourceBank, uint8_t tokenBank, Chunk* chunk)
    parser_previous = &tmp2;
 
    //
-   //  advance() "primes the pump" on the scanner.
+   //  advance() "primes the pump" on the reader.
    //
    advance();
 
-   // expression();
+   // expression();  only for testing the expression engine
    while(!match(TOKEN_EOF))
    {
       declaration();

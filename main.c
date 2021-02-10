@@ -39,6 +39,60 @@
 
 char lineInputBuffer[256];
 
+#define FORTUNE_MAX
+
+void logout()
+{
+   int r;
+   char* fortune[FORTUNE_MAX] = {
+        "    i'm sorry dave, i'm afraid i can't do that.",
+	"    whom computers would destroy, they must first drive mad.",
+	"    your lucky number is 3552664958674928.  watch for it everywhere.",
+	"    it may be that your whole purpose in life is simply to serve as a\n    warning to others.",
+	"    your fault -- core dumped",
+	"    if we do not change our direction we may end up where we're heading.",
+	"    q: why did the tachyon cross the road?\n    a: because it was on the other side.",
+	"    overload -- core meltdown sequence initiated.",
+	"    all programmers are playwrights and all computers are lousy actors.",
+	"    /earth is 98% full ... please delete anyone you can.",
+
+	"    every little picofarad has a nanohenry all its own.\n \
+                -- don vonada",
+
+	"    klein bottle for rent -- inquire within.",
+
+	"    niklaus wirth has lamented that, whereas europeans pronounce his name\n"
+	"    correctly (ni-klows virt), americans invariably mangle it into\n"
+	"    (nick-les worth).  which is to say that europeans call him by name, but\n"
+	"    americans call him by value.",
+
+	"    q:      why do ducks have flat feet?\n"
+	"    a:      to stamp out forest fires.\n"
+	"\n"
+	"    q:      why do elephants have flat feet?\n"
+	"    a:      to stamp out flaming ducks.\n",
+
+	"    there was a young poet named dan,\n"
+	"    whose poetry never would scan.\n"
+        "    when told this was so,\n"
+        "    he said, \"yes, i know.\n"
+	"it's because i try to put every possible syllable into that last line that i can\n"
+	"    .\"",
+
+	"    a witty saying proves nothing.\n"
+        "       -- voltaire",
+
+	"    ray's rule of precision:\n"
+        "    measure with a micrometer.  mark with chalk.  cut with an axe."
+
+   };
+ 
+   _randomize();
+   r = rand(); // 0 to 32767
+   r %= 17;
+   printf("\n\n\n%s\n\n\n", fortune[r]);
+}
+
 void repl()
 {
    int len = 0;
@@ -47,6 +101,7 @@ void repl()
   
    for(;;)
    {
+      printf("%u", _heapmemavail());
       cputs( "% " );
 
       if (!fgets(lineInputBuffer, sizeof(lineInputBuffer), stdin)) {
@@ -59,7 +114,7 @@ void repl()
 
       if(strlen(lineInputBuffer) > 0)
       {
-         if (!strcmp(lineInputBuffer,"exit")) exit(0);
+         if (!strcmp(lineInputBuffer,"logout")) logout();
          if (!strcmp(lineInputBuffer,"globals")) 
          {
             hashDump(&vm.globals);
@@ -70,16 +125,15 @@ void repl()
 
              Script is stored in Bank 1.
              That means the maximum script size is 8K.
-             I don't think that's a problem.  
+             I don't think that's a problem!
 
             ******************************************************/
       
             setBank(sourcebank);
             bankputs(lineInputBuffer, strlen(lineInputBuffer), 0);
-
+ 
+            scan(sourcebank, tokenbank);
             interpret(sourcebank, tokenbank); // in vm.c
-
-
          }
       }
    }

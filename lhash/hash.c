@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
 #include "object.h"
 #include "hash.h"
 #include "value.h"
@@ -37,14 +36,11 @@
 ////////////////////////////////////////////
 #define TABLE_MAX_LOAD 75
 
-static void adjustCapacity(Hash* table, int capacity);
-
 void initHash(Hash* table) 
 {
   table->count = 0;
   table->capacity = 0;
   table->entries = NULL;
-  adjustCapacity(table, 8);
 }
 
 void freeHash(Hash* table)
@@ -75,42 +71,11 @@ static Entry* findEntry(
     else if (entry->key->length == key->length && !strncmp(entry->key->chars, key->chars, key->length)) //entry->key == key)
     {
       // We found the key.
-      return entry;
+       return entry;
     }
 
     index = (index + 1) % capacity;
   }
-}
-
-void hashDump(Hash* table)
-{
-//   int i;
-   Entry* entries = table->entries;
-   printf("*** hash-dump() count %d, capacity %d, heap %u\n", table->count, table->capacity, _heapmaxavail());
-/*
-   for(i=0; i<table->capacity; i++)
-   {
-      Entry* entry = &entries[i];
-      ObjString* val = (ObjString*) entry->value.as.obj;
-      if ( entry->key != NULL )
-         cprintf("   %-10s: %-10s\r\n", entry->key->chars, val->chars);
-      else
-         printf("   -\n");
-   }
-   printf("\n\n");
-*/
-}
-
-bool hashGet(Hash* table, ObjString* key, Value* value)
-{
-  Entry* entry;
-  if (table->count == 0) return false;
-
-  entry = findEntry(table->entries, table->capacity, key);
-  if (entry->key == NULL) return false;
-
-  *value = entry->value;
-  return true;
 }
 
 static void adjustCapacity(Hash* table, int capacity) {
@@ -144,6 +109,39 @@ static void adjustCapacity(Hash* table, int capacity) {
   table->capacity = capacity;
 }
 
+
+void hashDump(Hash* table)
+{
+   int i;
+   Entry* entries = table->entries;
+   printf("\n*** hash-dump() count %d, capacity %d, heap %u\n", table->count, table->capacity, _heapmaxavail());
+
+/*
+   for(i=0; i<table->capacity; i++)
+   {
+      Entry* entry = &entries[i];
+      ObjString* val = (ObjString*) entry->value.as.obj;
+      if ( entry->key != NULL )
+         printf("   %s: %s\r\n", entry->key->chars, val->chars);
+      else
+         printf("   -\n");
+   }
+   printf("\n\n");
+*/
+}
+
+bool hashGet(Hash* table, ObjString* key, Value* value)
+{
+  Entry* entry;
+  if (table->count == 0) return false;
+
+  entry = findEntry(table->entries, table->capacity, key);
+  if (entry->key == NULL) return false;
+
+  *value = entry->value;
+  return true;
+}
+
 bool hashSet(Hash* table, ObjString* key, Value* value)
 {
    Entry* entry;
@@ -161,11 +159,6 @@ bool hashSet(Hash* table, ObjString* key, Value* value)
    }
 
    entry = findEntry(table->entries, table->capacity, key);
-//   printf("find-entry result: %s -> %s\n", entry->key->chars, AS_CSTRING(entry->value));
-   if ( entry == NULL )
-   {
-      printf(" hey, entry is null. not right!\n" );
-   }
 
    isNewKey = (entry->key == NULL);
    if (isNewKey && IS_NIL(entry->value)) 

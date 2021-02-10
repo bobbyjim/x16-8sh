@@ -60,7 +60,7 @@ int main()
 
    cbm_k_bsout(0x8E); // revert to primary case
 
-   //printf("size of an entry: %d\n", sizeof(HENT));
+   printf("size of a STR: %d\n", sizeof(STR));
 
    for(i=0; i<13; ++i)
    {

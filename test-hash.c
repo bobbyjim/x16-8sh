@@ -23,7 +23,7 @@ void title(char* title)
    puts("");
 }
 
-void verify(char* should, int shouldBe1)
+void verify(char* should, int shouldBe1, int actual)
 {
    ++total;
    if (shouldBe1 == 1)
@@ -36,7 +36,7 @@ void verify(char* should, int shouldBe1)
       printf("* fail *");
       ++failed;
    }
-   printf(" %03d : %-40s \n", total, should);
+   printf(" %03d : %-20s %d\n", total, should, actual);
 }
 
 void summary()
@@ -57,8 +57,8 @@ static Hash* testInit()
 {
    Hash table;
    initHash(&table);
-   verify("count is 0",    table.count    == 0);
-   verify("capacity is 8", table.capacity == 8);
+   verify("count is 0",    table.count    == 0, table.count);
+   verify("capacity is 8", table.capacity == 8, table.capacity);
    return &table;
 }
 
@@ -66,23 +66,23 @@ void testHashcode(const char* string, int len)
 {
    uint32_t hashcode1 = hashString(string, len);
    uint32_t hashcode2 = hashString(string, len);
-   verify("hashcode works", hashcode1 == hashcode2);
+   verify("hashcode works", hashcode1 == hashcode2, -1);
 }
 
 static ObjString* testAllocate(char* string, int len)
 {
    uint32_t hashcode = hashString(string, len);
    ObjString* str = allocateString(string, len, hashcode);
-   verify("obj-string length", str->length == len);
-   verify("obj-string hash",   str->hash   == hashcode);
-   verify("obj-string chars",  !strcmp(str->chars, string));
+   verify("obj-string length", str->length == len, str->length);
+   verify("obj-string hash",   str->hash   == hashcode, str->hash);
+   verify("obj-string chars",  !strcmp(str->chars, string), -1);
    return str;
 }
 
 static Value* testValue(ObjString* obj)
 {
    Value* val = objVal((Obj*)obj);
-   verify("value type is obj_string", val->type == 3);
+   verify("value type is obj_string", val->type == 3, val->type);
    return val;
 }
 

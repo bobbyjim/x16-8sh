@@ -23,7 +23,7 @@ void addOne(HASH* table, char* key, char* val)
 
 void buildKey(char* k, int num)
 {
-   sprintf(k, "key-%d", num);
+   sprintf(k, "k-%d", num);
 }
 
 char* getOne(HASH* table, char* key)
@@ -38,29 +38,36 @@ char* getOne(HASH* table, char* key)
    return AS_CSTRING(*value);
 }
 
-#define 	LOOPMAX		150
+#define 	LOOPMAX		20
 
 int main()
 {
    HASH* table; // = hnew();
    int i;
+   int j;
 
    initHash(table);
+   adjustCapacity(table, 256);
 
    cbm_k_bsout(0x8E); // revert to primary case
 
-   //printf("size of an entry: %d\n", sizeof(HENT));
    for(i=1; i<LOOPMAX; ++i)
    {
       char key[32];
       char val[64];
 
       buildKey(key, i);
-      sprintf(val, "value-%d", i);
+      sprintf(val, "v-%d", i);
       addOne(table, key, val);
-      if (i % 16 == 0)
-      { 
-         hashDump(table);
+
+      printf("table count = %d, capacity = %d, heap = %d\n", table->count, table->capacity, _heapmaxavail());
+      for(j=1; j<table->count; j++)
+      {
+         char* fetched = getOne(table, key);
+         if ( fetched == NULL )
+         {
+            printf("  - key %d missing\n", j );
+         }
       }
    }
    printf("\n");
@@ -72,12 +79,7 @@ int main()
 
       buildKey(key, i);
       fetched = getOne(table, key);
-      printf("%s: %s  ", key, fetched);
-      if (i % 4 == 0 )
-      {
-         printf("\n");
-      }
+      printf("(%s,%s) ", key, fetched);
    }
-
    return 0;
 }

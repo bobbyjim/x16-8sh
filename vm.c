@@ -32,6 +32,7 @@
 #include "debug.h"
 #include "object.h"
 #include "memory.h"
+#include "hash.h"
 
 VM vm;
 
@@ -67,7 +68,9 @@ void initVM() {
    resetStack();
    vm.objects = NULL;
    initHash(&vm.globals);
+   adjustCapacity(&vm.globals, 16);
    initHash(&vm.internedStrings);
+   adjustCapacity(&vm.internedStrings, 16);
 
    // set some constants
    setNil(&NIL_OBJ);
@@ -203,10 +206,30 @@ static InterpretResult run() {
       {
          ObjString* name = READ_STRING();
          Value* value;
-         if (!hashGet(&vm.globals, name, value)) {
+
+         //
+         //  An improvised "hashGet()"
+         //
+	 Entry* entries = vm.globals.entries;
+	 int capacity   = vm.globals.capacity;
+         Entry* found = findEntry(entries, capacity, name);
+         if ( found->key != NULL )
+         {
+            printf("vm - entry value is %s\n", AS_CSTRING(found->value));
+            value = &found->value;
+         }
+
+/*
+         if (!hashGet(&vm.globals, name, value)) 
+         {
             runtimeError("undefined variable '%s'.", name->chars);
             return INTERPRET_RUNTIME_ERROR;
          }
+         else
+         {
+            printf("vm - value for %s is %s\n", name->chars, AS_CSTRING(*value));
+         }
+*/
          push(value);
          break;
       }
